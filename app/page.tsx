@@ -1,40 +1,28 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { ChangeEvent, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  ArrowLeft, ArrowRight, BarChart3, Bell, BookOpen, BrainCircuit, Check,
-  CircleHelp, Clock3, Flame, FolderOpen, Gamepad2, Home, Library, ListChecks,
-  MessageCircle, Moon, MoreHorizontal, Plus, RotateCcw, Search, Settings, Shuffle,
-  Sparkles, Star, Sun, Target, Trophy, Volume2, WandSparkles, Zap,
+  ArrowLeft, ArrowRight, BarChart3, Bell, Blocks, BookOpen, Bot, BrainCircuit,
+  Check, CheckCircle2, ChevronDown, CircleHelp, Clock3, FileAudio, FileText,
+  Flame, FolderClosed, Gamepad2, Gauge, Headphones, Home, Layers3, Library,
+  ListChecks, LoaderCircle, Menu, MessageCircle, Mic2, Moon, MoreHorizontal,
+  NotebookPen, PanelLeftClose, PencilLine, Play, Plus, RotateCcw, Search,
+  Settings, Share2, Shuffle, Sparkles, Star, Sun, Target, Timer, Trash2,
+  Trophy, Upload, Volume2, WandSparkles, X, Zap,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import {
-  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader,
-  DialogTitle, DialogTrigger,
-} from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+  Sheet, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle,
+  SheetTrigger,
+} from '@/components/ui/sheet';
 
-type Mode = 'home' | 'library' | 'progress' | 'flashcards' | 'learn' | 'test' | 'match';
+type Mode = 'home' | 'create' | 'library' | 'set' | 'progress' | 'flashcards' | 'learn' | 'test' | 'match';
+type Card = { term: string; definition: string; mastery: number };
+type StudySet = { id: string; title: string; subject: string; cards: Card[]; source?: string };
 
-type WebMCPTool = {
-  name: string;
-  title: string;
-  description: string;
-  inputSchema: object;
-  annotations: { readOnlyHint: boolean; untrustedContentHint: boolean };
-  execute: (input: unknown) => unknown;
-};
-
-declare global {
-  interface Document {
-    modelContext?: {
-      registerTool: (tool: WebMCPTool, options?: { signal?: AbortSignal }) => void | Promise<void>;
-    };
-  }
-}
-
-const cards = [
+const biologyCards: Card[] = [
   { term: 'Mitochondria', definition: 'The organelle that produces most of a cell’s usable energy through cellular respiration.', mastery: 92 },
   { term: 'Ribosome', definition: 'A tiny cellular structure where amino acids are assembled into proteins.', mastery: 84 },
   { term: 'Cell membrane', definition: 'A selectively permeable boundary that controls what enters and leaves a cell.', mastery: 78 },
@@ -45,238 +33,121 @@ const cards = [
   { term: 'Endoplasmic reticulum', definition: 'A membrane network involved in protein and lipid production and transport.', mastery: 42 },
 ];
 
-const modeMeta = [
-  { id: 'flashcards' as Mode, label: 'Flashcards', icon: BookOpen, note: 'Flip & recall', color: 'bg-[#e8e5ff] text-[#5144d7]' },
-  { id: 'learn' as Mode, label: 'Learn', icon: BrainCircuit, note: 'Adaptive practice', color: 'bg-[#dff5f3] text-[#147d82]' },
-  { id: 'test' as Mode, label: 'Practice test', icon: ListChecks, note: '8 questions', color: 'bg-[#fff0d8] text-[#9a5b00]' },
-  { id: 'match' as Mode, label: 'Match sprint', icon: Gamepad2, note: 'Beat your best', color: 'bg-[#f7e3ef] text-[#ae3f76]' },
-];
+const starterSet: StudySet = { id: 'biology-essentials', title: 'Cell Biology Essentials', subject: 'Biology', cards: biologyCards, source: 'Chapter 4 notes.pdf' };
 
-function Brand() {
-  return (
-    <div className="flex items-center gap-3">
-      <div className="relative grid size-10 place-items-center rounded-[14px] bg-[#9ed957] text-[#152008] shadow-[inset_0_-3px_0_rgba(30,60,10,.14)]">
-        <BrainCircuit className="size-5" strokeWidth={2.4} />
-        <span className="absolute -right-1 -top-1 size-2.5 rounded-full border-2 border-[#111b31] bg-[#8b80ff]" />
-      </div>
-      <span className="text-[1.2rem] font-bold tracking-[-.045em] text-white">quizbuddy</span>
-    </div>
-  );
+type WebMCPTool = {
+  name: string; title: string; description: string; inputSchema: object;
+  annotations: { readOnlyHint: boolean; untrustedContentHint: boolean };
+  execute: (input: unknown) => unknown;
+};
+
+declare global {
+  interface Document {
+    modelContext?: { registerTool: (tool: WebMCPTool, options?: { signal?: AbortSignal }) => void | Promise<void> };
+  }
 }
 
-function Sidebar({ mode, setMode }: { mode: Mode; setMode: (m: Mode) => void }) {
-  const links = [
-    { id: 'home' as Mode, label: 'Today', icon: Home },
+function Logo({ compact = false }: { compact?: boolean }) {
+  return <div className="flex items-center gap-2.5"><div className="relative grid size-9 place-items-center rounded-xl bg-[#6ce5d1] text-[#081713] shadow-[0_0_0_4px_rgba(108,229,209,.08)]"><BrainCircuit className="size-5" strokeWidth={2.4}/><span className="absolute -right-0.5 -top-0.5 size-2 rounded-full border-2 border-[#101217] bg-[#8c7df7]"/></div>{!compact&&<span className="text-xl font-bold tracking-[-.055em] text-white">quizbuddy</span>}</div>;
+}
+
+function Sidebar({ mode, setMode, setTutorOpen }: { mode: Mode; setMode: (m: Mode) => void; setTutorOpen: (v: boolean) => void }) {
+  const main = [
+    { id: 'home' as Mode, label: 'Home', icon: Home },
     { id: 'library' as Mode, label: 'My library', icon: Library },
     { id: 'progress' as Mode, label: 'Progress', icon: BarChart3 },
   ];
-  return (
-    <aside className="fixed inset-y-0 left-0 z-30 hidden w-[244px] flex-col bg-[#111b31] px-4 py-5 text-[#dfe5f1] lg:flex">
-      <div className="px-2"><Brand /></div>
-      <Button onClick={() => setMode('library')} className="mt-8 h-11 justify-start gap-2.5 rounded-xl bg-[#9ed957] px-4 font-semibold text-[#17220b] hover:bg-[#b3e879]">
-        <Plus className="size-4" /> New study set
-      </Button>
-      <nav aria-label="Main navigation" className="mt-7 space-y-1">
-        {links.map(({ id, label, icon: Icon }) => (
-          <button key={id} onClick={() => setMode(id)} className={`flex h-11 w-full items-center gap-3 rounded-xl px-3.5 text-left text-[.93rem] font-medium transition ${mode === id ? 'bg-[#29344e] text-white shadow-[inset_3px_0_0_#8b80ff]' : 'text-[#aeb8ca] hover:bg-[#1b2740] hover:text-white'}`}>
-            <Icon className="size-[18px]" /> {label}
-          </button>
-        ))}
-      </nav>
-      <div className="mt-8 px-3 text-[.7rem] font-bold uppercase tracking-[.16em] text-[#748199]">Study tools</div>
-      <nav className="mt-3 space-y-1" aria-label="Study tools">
-        {modeMeta.map(({ id, label, icon: Icon }) => (
-          <button key={id} onClick={() => setMode(id)} className={`flex h-10 w-full items-center gap-3 rounded-xl px-3.5 text-left text-sm transition ${mode === id ? 'bg-[#29344e] text-white' : 'text-[#aeb8ca] hover:bg-[#1b2740] hover:text-white'}`}>
-            <Icon className="size-[17px]" /> {label}
-          </button>
-        ))}
-      </nav>
-      <div className="mt-auto rounded-2xl border border-[#2b3750] bg-[#18243a] p-3.5">
-        <div className="mb-3 flex items-center gap-3">
-          <div className="grid size-9 place-items-center rounded-full bg-[#8b80ff] text-sm font-bold text-white">TM</div>
-          <div className="min-w-0"><p className="truncate text-sm font-semibold text-white">Study mode</p><p className="text-xs text-[#8f9cb1]">Everything unlocked</p></div>
-          <Settings className="ml-auto size-4 text-[#7f8ba0]" />
-        </div>
-        <div className="h-1.5 overflow-hidden rounded-full bg-[#2a354b]"><div className="h-full w-[72%] rounded-full bg-[#9ed957]" /></div>
-        <p className="mt-2 text-xs text-[#8f9cb1]">72% of this week’s goal</p>
-      </div>
-    </aside>
-  );
-}
-
-function Topbar({ mode, setMode, dark, setDark }: { mode: Mode; setMode: (m: Mode) => void; dark: boolean; setDark: (v: boolean) => void }) {
-  const titles: Record<Mode, string> = { home: 'Today', library: 'My library', progress: 'Progress', flashcards: 'Flashcards', learn: 'Learn', test: 'Practice test', match: 'Match sprint' };
-  return (
-    <header className="sticky top-0 z-20 flex h-[72px] items-center border-b border-border/80 bg-background/90 px-4 backdrop-blur-xl sm:px-7 lg:px-9">
-      <div className="flex items-center gap-3 lg:hidden">
-        <div className="grid size-9 place-items-center rounded-xl bg-[#111b31] text-[#9ed957]"><BrainCircuit className="size-5" /></div>
-        <span className="hidden font-bold tracking-tight sm:inline">quizbuddy</span>
-      </div>
-      <div className="ml-3 hidden h-6 w-px bg-border lg:block" />
-      <h1 className="ml-4 hidden text-[1.04rem] font-semibold tracking-tight text-foreground lg:block">{titles[mode]}</h1>
-      <div className="relative ml-auto hidden w-full max-w-[380px] md:block">
-        <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-        <input aria-label="Search study sets" placeholder="Search your sets" className="h-10 w-full rounded-xl border border-border bg-card pl-9 pr-3 text-sm shadow-sm outline-none transition focus:border-[#8b80ff] focus:ring-4 focus:ring-[#8b80ff]/10" />
-      </div>
-      <div className="ml-3 flex items-center gap-1.5">
-        <Button onClick={() => setDark(!dark)} variant="ghost" size="icon" aria-label="Toggle theme">{dark ? <Sun /> : <Moon />}</Button>
-        <Button variant="ghost" size="icon" aria-label="Notifications" className="relative"><Bell /><span className="absolute right-1.5 top-1.5 size-2 rounded-full border-2 border-background bg-[#ef6da7]" /></Button>
-        <Button onClick={() => setMode('library')} className="ml-1 hidden h-9 rounded-xl bg-[#5c4cf1] px-4 font-semibold text-white hover:bg-[#4c3de0] sm:inline-flex"><Plus /> Create</Button>
-      </div>
-    </header>
-  );
-}
-
-function MasteryRing({ value }: { value: number }) {
-  return (
-    <div className="relative grid size-[88px] place-items-center rounded-full" style={{ background: `conic-gradient(#5c4cf1 ${value * 3.6}deg, #eceef5 0)` }}>
-      <div className="grid size-[68px] place-items-center rounded-full bg-card"><span className="text-xl font-bold tracking-tight">{value}%</span></div>
+  return <aside className="fixed inset-y-0 left-0 z-30 hidden w-[252px] flex-col border-r border-[#22252c] bg-[#101217] px-3.5 py-5 lg:flex">
+    <div className="px-2"><Logo/></div>
+    <Button onClick={()=>setMode('create')} className="mt-7 h-11 justify-start rounded-xl bg-[#6ce5d1] px-4 font-bold text-[#071612] hover:bg-[#88eddd]"><Plus/> Create</Button>
+    <div className="mt-6 space-y-1">{main.map(({id,label,icon:Icon})=><button key={id} onClick={()=>setMode(id)} className={`flex h-10 w-full items-center gap-3 rounded-xl px-3 text-sm font-semibold transition ${mode===id?'bg-[#292d35] text-white':'text-[#9299a8] hover:bg-[#1d2027] hover:text-white'}`}><Icon className="size-[18px]"/>{label}</button>)}
+      <button onClick={()=>setTutorOpen(true)} className="flex h-10 w-full items-center gap-3 rounded-xl px-3 text-sm font-semibold text-[#9299a8] transition hover:bg-[#1d2027] hover:text-white"><Sparkles className="size-[18px]"/> AI tutor<span className="ml-auto rounded-full bg-[#322d5b] px-2 py-0.5 text-[10px] font-bold text-[#cfc8ff]">AI</span></button>
     </div>
-  );
+    <div className="mt-7 px-3 text-[.7rem] font-bold uppercase tracking-[.14em] text-[#5f6571]">Study</div>
+    <div className="mt-2 space-y-1">
+      {[['set','Cell Biology',FolderClosed],['flashcards','Flashcards',Layers3],['learn','Learn',BrainCircuit],['test','Practice tests',ListChecks],['match','Match sprint',Gamepad2]].map(([id,label,Icon])=><button key={String(id)} onClick={()=>setMode(id as Mode)} className={`flex h-9 w-full items-center gap-3 rounded-xl px-3 text-sm transition ${mode===id?'bg-[#242830] text-[#6ce5d1]':'text-[#858d9c] hover:text-white'}`}><Icon className="size-4"/>{String(label)}</button>)}
+    </div>
+    <div className="mt-auto space-y-1 border-t border-[#24272e] pt-4"><button className="flex h-9 w-full items-center gap-3 rounded-xl px-3 text-sm text-[#858d9c] hover:text-white"><CircleHelp className="size-4"/> Help</button><button className="flex h-9 w-full items-center gap-3 rounded-xl px-3 text-sm text-[#858d9c] hover:text-white"><Settings className="size-4"/> Settings</button><div className="mt-2 flex items-center gap-3 rounded-xl bg-[#181b21] p-2.5"><div className="grid size-8 place-items-center rounded-lg bg-[#7c6cf5] text-xs font-bold text-white">TM</div><div><p className="text-sm font-semibold text-white">Study space</p><p className="text-xs text-[#707887]">Everything unlocked</p></div><MoreHorizontal className="ml-auto size-4 text-[#707887]"/></div></div>
+  </aside>;
 }
 
-function StudyModes({ setMode }: { setMode: (m: Mode) => void }) {
-  return (
-    <section>
-      <div className="mb-3 flex items-end justify-between"><div><p className="text-xs font-bold uppercase tracking-[.14em] text-[#7264f4]">Pick your pace</p><h2 className="mt-1 text-xl font-bold tracking-[-.03em]">How do you want to study?</h2></div><button className="text-sm font-semibold text-[#5c4cf1]">See all tools</button></div>
-      <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
-        {modeMeta.map(({ id, label, icon: Icon, note, color }) => (
-          <button key={id} onClick={() => setMode(id)} className="group rounded-2xl border border-border bg-card p-4 text-left shadow-[0_7px_25px_rgba(31,43,68,.045)] transition hover:-translate-y-1 hover:border-[#9c94f7] hover:shadow-[0_12px_30px_rgba(68,57,170,.1)]">
-            <div className={`mb-5 grid size-10 place-items-center rounded-xl ${color}`}><Icon className="size-5" /></div>
-            <p className="font-semibold tracking-tight">{label}</p><p className="mt-1 text-xs text-muted-foreground">{note}</p>
-          </button>
-        ))}
+function Topbar({ light, setLight, setMode }: { light: boolean; setLight: (v:boolean)=>void; setMode:(m:Mode)=>void }) {
+  return <header className="sticky top-0 z-20 flex h-[68px] items-center gap-3 border-b border-border/80 bg-background/90 px-4 backdrop-blur-xl sm:px-6 lg:px-8">
+    <div className="lg:hidden"><Logo compact/></div>
+    <div className="relative hidden w-full max-w-[560px] md:block"><Search className="absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"/><input aria-label="Search study materials" placeholder="Search sets, notes, and classes" className="h-10 w-full rounded-xl border border-border bg-[#15181f] pl-10 pr-4 text-sm text-white outline-none transition focus:border-[#6ce5d1]/70 focus:ring-4 focus:ring-[#6ce5d1]/10"/></div>
+    <div className="ml-auto flex items-center gap-1.5"><div className="mr-1 hidden items-center gap-2 rounded-xl bg-[#171a20] px-3 py-2 text-sm sm:flex"><Flame className="size-4 fill-[#ffc764] text-[#ffc764]"/><span className="font-bold">9</span></div><Button onClick={()=>setLight(!light)} variant="ghost" size="icon" aria-label="Toggle theme">{light?<Moon/>:<Sun/>}</Button><Button variant="ghost" size="icon" aria-label="Notifications"><Bell/></Button><Button onClick={()=>setMode('create')} className="ml-1 h-10 rounded-xl bg-[#6ce5d1] px-4 font-bold text-[#071612] hover:bg-[#88eddd]"><Plus/><span className="hidden sm:inline">Create</span></Button></div>
+  </header>;
+}
+
+function ActionCard({ icon:Icon, tone, title, copy, action, onClick }: {icon:typeof Upload; tone:string; title:string; copy:string; action:string; onClick:()=>void}) {
+  return <button onClick={onClick} className="group min-h-48 rounded-[22px] border border-border bg-card p-5 text-left transition duration-200 hover:-translate-y-1 hover:border-[#515866] hover:shadow-[0_18px_50px_rgba(0,0,0,.25)]"><div className={`grid size-11 place-items-center rounded-2xl ${tone}`}><Icon className="size-5"/></div><h3 className="mt-7 text-[1.05rem] font-bold tracking-[-.025em]">{title}</h3><p className="mt-2 min-h-10 text-sm leading-5 text-muted-foreground">{copy}</p><span className="mt-5 inline-flex items-center gap-1.5 text-sm font-bold text-foreground">{action}<ArrowRight className="size-3.5 transition group-hover:translate-x-1"/></span></button>;
+}
+
+function HomeView({ onFile, openPicker, setTutorOpen, setMode }: {onFile:(e:ChangeEvent<HTMLInputElement>)=>void; openPicker:()=>void; setTutorOpen:(v:boolean)=>void; setMode:(m:Mode)=>void}) {
+  return <div className="relative mx-auto max-w-[1220px] p-4 pb-28 sm:p-7 lg:p-9 lg:pb-12">
+    <div className="ambient-orb pointer-events-none absolute -top-16 right-16 size-64 rounded-full bg-[#7c6cf5]/10 blur-[90px]"/>
+    <section className="rise relative overflow-hidden rounded-[30px] border border-[#313742] bg-[#12151c] px-5 py-8 sm:px-8 lg:px-10">
+      <div className="pointer-events-none absolute -right-16 -top-28 size-80 rounded-full bg-[#6ce5d1]/10 blur-3xl"/><div className="pointer-events-none absolute bottom-0 left-1/3 h-24 w-80 bg-[#7c6cf5]/10 blur-3xl"/>
+      <div className="relative z-10 grid gap-8 lg:grid-cols-[1.05fr_.95fr] lg:items-center">
+        <div><div className="mb-4 inline-flex items-center gap-2 rounded-full border border-[#3a4050] bg-[#20242d] px-3 py-1.5 text-xs font-bold text-[#b8beca]"><Sparkles className="size-3.5 text-[#6ce5d1]"/> AI study studio</div><h1 className="max-w-xl text-[clamp(2.25rem,5vw,4.2rem)] font-bold leading-[.98] tracking-[-.068em]">Turn anything into <span className="text-[#6ce5d1]">study tools.</span></h1><p className="mt-5 max-w-xl text-base leading-7 text-[#9ba3b1] sm:text-lg">Drop in class notes, a paper, or a reading. Quizbuddy creates editable flashcards, practice questions, and a personal tutor grounded in your material.</p><div className="mt-7 flex flex-wrap gap-3"><Button onClick={openPicker} className="h-12 rounded-xl bg-[#6ce5d1] px-5 text-base font-bold text-[#071612] hover:bg-[#88eddd]"><Upload/> Upload material</Button><Button onClick={()=>setTutorOpen(true)} variant="outline" className="h-12 rounded-xl border-[#373c48] bg-[#1a1d24] px-5 text-base font-bold text-white hover:bg-[#232730]"><MessageCircle/> Ask quizbuddy</Button></div><p className="mt-4 flex items-center gap-2 text-xs text-[#6f7785]"><CheckCircle2 className="size-3.5 text-[#6ce5d1]"/> PDF, DOCX, TXT, and Markdown · up to 8 MB</p></div>
+        <button onClick={openPicker} className="group relative min-h-[310px] overflow-hidden rounded-[24px] border border-dashed border-[#414856] bg-[#191c23] p-5 text-left transition hover:border-[#6ce5d1]/70 hover:bg-[#1d2129]">
+          <div className="absolute inset-x-10 top-8 rotate-[-4deg] rounded-2xl border border-[#343947] bg-[#222630] p-5 opacity-55 shadow-2xl transition group-hover:-translate-y-2"><div className="h-2.5 w-32 rounded-full bg-[#5a6170]"/><div className="mt-4 h-2 w-full rounded-full bg-[#393e49]"/><div className="mt-2 h-2 w-4/5 rounded-full bg-[#393e49]"/></div>
+          <div className="absolute inset-x-7 top-[88px] rotate-[3deg] rounded-2xl border border-[#45405f] bg-[#282540] p-5 opacity-80 shadow-2xl transition group-hover:translate-y-1"><div className="flex gap-2"><span className="rounded-md bg-[#7c6cf5] px-2 py-1 text-[10px] font-bold text-white">TERM</span><span className="rounded-md bg-[#6ce5d1]/15 px-2 py-1 text-[10px] font-bold text-[#6ce5d1]">AI DRAFT</span></div><p className="mt-4 text-sm font-semibold text-[#d8d4ff]">What is cellular respiration?</p></div>
+          <div className="absolute inset-x-5 bottom-5 rounded-2xl border border-[#3c4350] bg-[#f5f7fb] p-5 text-[#151922] shadow-[0_20px_50px_rgba(0,0,0,.35)]"><div className="flex items-center gap-3"><div className="grid size-10 place-items-center rounded-xl bg-[#dff8f4] text-[#159484]"><WandSparkles className="size-5"/></div><div><p className="font-bold">Drop your notes here</p><p className="text-xs text-[#707887]">Quizbuddy does the organizing</p></div><div className="ml-auto grid size-9 place-items-center rounded-full bg-[#151922] text-white"><Plus className="size-4"/></div></div></div>
+        </button>
       </div>
     </section>
-  );
+
+    <section className="mt-9"><div className="mb-4 flex items-end justify-between"><div><p className="text-xs font-bold uppercase tracking-[.14em] text-[#6ce5d1]">Start creating</p><h2 className="mt-1 text-2xl font-bold tracking-[-.045em]">What are you studying from?</h2></div></div><div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4"><ActionCard icon={Upload} tone="bg-[#173b38] text-[#6ce5d1]" title="Upload a file" copy="Turn papers, slides, or notes into a complete study set." action="Choose a file" onClick={openPicker}/><ActionCard icon={NotebookPen} tone="bg-[#2c2854] text-[#b6adff]" title="Paste notes" copy="Paste class notes and choose exactly what the AI should make." action="Open composer" onClick={()=>setMode('create')}/><ActionCard icon={Mic2} tone="bg-[#4b2637] text-[#ff91b9]" title="Record a lecture" copy="Capture a class and turn the transcript into study tools." action="Start recording" onClick={()=>setTutorOpen(true)}/><ActionCard icon={Bot} tone="bg-[#3f321b] text-[#ffc764]" title="Build with AI" copy="Talk through a topic and shape the cards together." action="Start a chat" onClick={()=>setTutorOpen(true)}/></div></section>
+
+    <section className="mt-10 grid gap-5 xl:grid-cols-[1fr_330px]"><div><div className="mb-4 flex items-center justify-between"><h2 className="text-xl font-bold tracking-[-.035em]">Jump back in</h2><button onClick={()=>setMode('library')} className="text-sm font-bold text-[#6ce5d1]">View library</button></div><button onClick={()=>setMode('set')} className="group flex w-full flex-col gap-5 rounded-[22px] border border-border bg-card p-5 text-left transition hover:border-[#4c5260] sm:flex-row sm:items-center"><div className="grid aspect-[1.2] w-full shrink-0 place-items-center overflow-hidden rounded-2xl bg-gradient-to-br from-[#27234e] via-[#203449] to-[#16463f] sm:w-40"><div className="grid size-16 place-items-center rounded-2xl border border-white/10 bg-white/10 text-[#6ce5d1]"><Layers3 className="size-8"/></div></div><div className="min-w-0 flex-1"><div className="flex items-center gap-2"><span className="rounded-md bg-[#242a31] px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-[#6ce5d1]">Biology</span><span className="text-xs text-muted-foreground">8 terms</span></div><h3 className="mt-3 text-xl font-bold tracking-tight">Cell Biology Essentials</h3><p className="mt-1 text-sm text-muted-foreground">Created from Chapter 4 notes.pdf</p><div className="mt-4 flex items-center gap-3"><div className="h-1.5 flex-1 overflow-hidden rounded-full bg-[#282c34]"><div className="h-full w-[74%] rounded-full bg-[#6ce5d1]"/></div><span className="text-xs font-bold text-[#8c95a5]">74%</span></div></div><div className="grid size-10 shrink-0 place-items-center rounded-full border border-border transition group-hover:bg-[#6ce5d1] group-hover:text-[#071612]"><ArrowRight className="size-4"/></div></button></div><aside className="rounded-[22px] border border-border bg-card p-5"><div className="flex items-center justify-between"><div><p className="text-sm font-bold">Today’s focus</p><p className="text-xs text-muted-foreground">8 minute plan</p></div><div className="grid size-10 place-items-center rounded-xl bg-[#2c2854] text-[#b6adff]"><Target className="size-5"/></div></div><div className="mt-6 space-y-4">{[['12','Cards due'],['3','Weak terms'],['9','Day streak']].map(([v,l],i)=><div key={l} className="flex items-center gap-3"><span className={`size-2 rounded-full ${['bg-[#6ce5d1]','bg-[#ffc764]','bg-[#f47bb5]'][i]}`}/><span className="text-sm text-muted-foreground">{l}</span><span className="ml-auto text-sm font-bold">{v}</span></div>)}</div><Button onClick={()=>setMode('learn')} className="mt-6 h-10 w-full rounded-xl bg-[#f3f5f8] font-bold text-[#11151d] hover:bg-white"><Play className="fill-current"/> Start quick review</Button></aside></section>
+    <input id="material-upload" type="file" accept=".pdf,.doc,.docx,.txt,.md,application/pdf,text/plain" className="hidden" onChange={onFile}/>
+  </div>;
 }
 
-function HomeView({ setMode }: { setMode: (m: Mode) => void }) {
-  return (
-    <div className="mx-auto max-w-[1180px] space-y-8 p-4 pb-28 sm:p-7 lg:p-9 lg:pb-10">
-      <section className="float-in flex flex-col justify-between gap-5 sm:flex-row sm:items-end">
-        <div><p className="text-sm font-medium text-muted-foreground">Monday, September 7</p><h2 className="mt-1 text-[clamp(1.65rem,3vw,2.4rem)] font-bold tracking-[-.055em]">Ready for a quick win?</h2><p className="mt-1 text-[.98rem] text-muted-foreground">You have <span className="font-semibold text-foreground">12 cards</span> due today. About 8 minutes.</p></div>
-        <div className="flex items-center gap-2 rounded-2xl border border-[#eadfb9] bg-[#fffaf0] px-4 py-3 text-[#81500b] dark:border-[#5b4521] dark:bg-[#2e2515] dark:text-[#f5c975]"><Flame className="size-5 fill-[#ffbc57] text-[#e89418]" /><div><p className="text-sm font-bold">9 day streak</p><p className="text-xs opacity-70">Your best is 14</p></div></div>
-      </section>
-
-      <section className="grid gap-5 xl:grid-cols-[minmax(0,1.55fr)_minmax(300px,.7fr)]">
-        <div className="relative overflow-hidden rounded-[26px] bg-[#171f38] p-6 text-white shadow-[0_18px_55px_rgba(20,29,55,.18)] sm:p-7">
-          <div className="absolute -right-16 -top-24 size-72 rounded-full border-[48px] border-[#5c4cf1]/30" /><div className="absolute -bottom-24 right-28 size-52 rounded-full border-[36px] border-[#9ed957]/15" />
-          <div className="relative z-10 flex h-full min-h-[252px] flex-col">
-            <div className="flex items-center justify-between"><span className="rounded-full bg-white/10 px-3 py-1.5 text-xs font-semibold text-[#cdd5e5]">BIOLOGY · 8 terms</span><Button variant="ghost" size="icon" className="text-[#aeb8ca] hover:bg-white/10 hover:text-white"><MoreHorizontal /></Button></div>
-            <div className="mt-8 max-w-xl"><p className="text-sm font-medium text-[#9ed957]">Continue where you left off</p><h3 className="mt-2 text-[clamp(1.6rem,3vw,2.35rem)] font-bold tracking-[-.045em]">Cell Biology Essentials</h3><p className="mt-2 max-w-lg text-sm leading-6 text-[#aeb8ca]">Your memory is strongest on cell structures. Two organelles need another look.</p></div>
-            <div className="mt-auto flex flex-wrap items-center gap-3 pt-7"><Button onClick={() => setMode('learn')} className="pulse-soft h-11 rounded-xl bg-[#9ed957] px-5 font-bold text-[#16210a] hover:bg-[#b1e873]"><Zap className="fill-current" /> Continue learning</Button><Button onClick={() => setMode('flashcards')} variant="ghost" className="h-11 rounded-xl border border-white/15 px-4 text-white hover:bg-white/10"><BookOpen /> Review cards</Button><span className="ml-auto text-xs text-[#8c98ad]">Last studied 2h ago</span></div>
-          </div>
-        </div>
-
-        <div className="rounded-[26px] border border-border bg-card p-6 shadow-[0_8px_30px_rgba(31,43,68,.055)]">
-          <div className="flex items-start justify-between"><div><p className="text-sm font-semibold">Set mastery</p><p className="mt-1 text-xs text-muted-foreground">Up 8% this week</p></div><MasteryRing value={74} /></div>
-          <div className="mt-8 space-y-4">
-            {[['Mastered', '3', 'bg-[#9ed957]'], ['Learning', '3', 'bg-[#5c4cf1]'], ['New', '2', 'bg-[#d9dce5]']].map(([label, value, color]) => <div key={label} className="flex items-center gap-3 text-sm"><span className={`size-2.5 rounded-full ${color}`} /><span className="text-muted-foreground">{label}</span><span className="ml-auto font-bold tabular-nums">{value}</span></div>)}
-          </div>
-          <div className="mt-7 rounded-xl bg-muted/60 p-3.5"><div className="flex items-center gap-2 text-xs font-semibold"><Sparkles className="size-4 text-[#5c4cf1]" /> Smart review</div><p className="mt-1.5 text-xs leading-5 text-muted-foreground">Best time to revisit: today at 7:30 PM</p></div>
-        </div>
-      </section>
-
-      <StudyModes setMode={setMode} />
-
-      <section className="grid gap-5 xl:grid-cols-[1fr_340px]">
-        <div className="rounded-2xl border border-border bg-card p-5"><div className="mb-5 flex items-center justify-between"><div><p className="text-xs font-bold uppercase tracking-[.14em] text-[#147d82]">Memory map</p><h2 className="mt-1 text-lg font-bold tracking-tight">Terms to sharpen</h2></div><Target className="size-5 text-[#5c4cf1]" /></div><div className="space-y-4">{cards.slice(5).map(card => <button key={card.term} onClick={() => setMode('flashcards')} className="grid w-full grid-cols-[minmax(0,1fr)_96px_34px] items-center gap-3 text-left"><span className="truncate text-sm font-medium">{card.term}</span><div className="h-2 overflow-hidden rounded-full bg-muted"><div className="h-full rounded-full bg-[#5c4cf1]" style={{width:`${card.mastery}%`}} /></div><span className="text-right text-xs font-semibold tabular-nums text-muted-foreground">{card.mastery}%</span></button>)}</div></div>
-        <div className="rounded-2xl border border-[#d7d2ff] bg-[#f4f2ff] p-5 dark:border-[#3a3569] dark:bg-[#201d3c]"><div className="grid size-10 place-items-center rounded-xl bg-[#5c4cf1] text-white"><WandSparkles className="size-5" /></div><h2 className="mt-5 text-lg font-bold tracking-tight">Ask your AI tutor</h2><p className="mt-2 text-sm leading-6 text-muted-foreground">Get a hint, a simpler explanation, or a fresh example—without leaving your deck.</p><Button onClick={() => setMode('learn')} className="mt-5 h-10 w-full rounded-xl bg-[#5c4cf1] font-semibold text-white"><MessageCircle /> Start a study chat</Button></div>
-      </section>
-    </div>
-  );
+function SetView({ set, setMode, setTutorOpen }: {set:StudySet; setMode:(m:Mode)=>void; setTutorOpen:(v:boolean)=>void}) {
+  const [index,setIndex]=useState(0); const [flipped,setFlipped]=useState(false); const card=set.cards[index];
+  const tools=[{id:'flashcards' as Mode,label:'Flashcards',icon:Layers3,tone:'text-[#6ce5d1]'},{id:'learn' as Mode,label:'Learn',icon:BrainCircuit,tone:'text-[#8c7df7]'},{id:'test' as Mode,label:'Test',icon:ListChecks,tone:'text-[#80a8ff]'},{id:'match' as Mode,label:'Match',icon:Gamepad2,tone:'text-[#f47bb5]'},{id:'learn' as Mode,label:'Blast',icon:Zap,tone:'text-[#ffc764]'},{id:'progress' as Mode,label:'Analytics',icon:Gauge,tone:'text-[#7fd2ff]'}];
+  const move=(step:number)=>{setIndex((index+step+set.cards.length)%set.cards.length);setFlipped(false)};
+  return <div className="mx-auto max-w-[1100px] p-4 pb-28 sm:p-7 lg:p-9"><div className="flex flex-wrap items-start gap-4"><div className="min-w-0 flex-1"><div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[#6ce5d1]">{set.subject}<span className="text-[#4f5664]">·</span><span className="text-muted-foreground">{set.cards.length} terms</span></div><h1 className="mt-2 text-[clamp(1.75rem,4vw,2.8rem)] font-bold tracking-[-.055em]">{set.title}</h1><p className="mt-2 flex items-center gap-2 text-sm text-muted-foreground"><FileText className="size-4"/>{set.source||'Created with quizbuddy AI'}</p></div><div className="flex gap-2"><Button variant="outline" size="icon" aria-label="Favorite"><Star/></Button><Button variant="outline" size="icon" aria-label="Share"><Share2/></Button><Button variant="outline" size="icon" aria-label="More"><MoreHorizontal/></Button></div></div>
+    <div className="mt-7 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">{tools.map(({id,label,icon:Icon,tone},i)=><button key={`${label}-${i}`} onClick={()=>setMode(id)} className="flex h-14 items-center justify-center gap-2.5 rounded-xl border border-border bg-[#181b22] text-sm font-bold transition hover:-translate-y-0.5 hover:border-[#4a505d]"><Icon className={`size-[18px] ${tone}`}/>{label}</button>)}</div>
+    <section className="mt-5 rounded-[26px] border border-[#303540] bg-[#11141a] p-3 shadow-[0_24px_70px_rgba(0,0,0,.26)] sm:p-5"><div className="mb-3 flex items-center justify-between px-1"><button onClick={()=>setTutorOpen(true)} className="flex items-center gap-2 text-xs font-bold text-[#9ba3b1] hover:text-white"><Sparkles className="size-4 text-[#6ce5d1]"/> Get an AI hint</button><div className="flex gap-1"><Button variant="ghost" size="icon-sm" aria-label="Edit card"><PencilLine/></Button><Button variant="ghost" size="icon-sm" aria-label="Read aloud"><Volume2/></Button><Button variant="ghost" size="icon-sm" aria-label="Star card"><Star/></Button></div></div><button onClick={()=>setFlipped(!flipped)} className="relative flex min-h-[390px] w-full items-center justify-center overflow-hidden rounded-[21px] border border-[#343a47] bg-[#252a35] p-9 text-center transition hover:border-[#4e5666]"><div className="absolute left-6 top-5 rounded-lg bg-[#343a47] px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-[#aeb5c2]">{flipped?'Definition':'Term'}</div><p className={`${flipped?'max-w-2xl text-[clamp(1.25rem,3vw,1.85rem)] leading-relaxed':'text-[clamp(2rem,6vw,3.7rem)]'} font-semibold tracking-[-.04em] text-[#f3f5f8]`}>{flipped?card.definition:card.term}</p><p className="absolute bottom-5 text-xs text-[#777f8d]">Click to flip</p></button><div className="mt-4 flex items-center justify-between gap-3"><label className="hidden items-center gap-2 text-xs font-semibold text-[#89919f] sm:flex"><span className="h-5 w-9 rounded-full bg-[#6ce5d1] p-0.5"><span className="block size-4 translate-x-4 rounded-full bg-[#0d1715]"/></span>Track progress</label><div className="flex items-center gap-3 sm:absolute sm:left-1/2 sm:-translate-x-1/2"><Button onClick={()=>move(-1)} variant="secondary" size="icon-lg"><ArrowLeft/></Button><span className="min-w-14 text-center text-sm font-bold text-[#9299a8]">{index+1} / {set.cards.length}</span><Button onClick={()=>move(1)} variant="secondary" size="icon-lg"><ArrowRight/></Button></div><div className="ml-auto flex gap-1"><Button onClick={()=>setIndex(Math.floor(Math.random()*set.cards.length))} variant="ghost" size="icon" aria-label="Shuffle"><Shuffle/></Button><Button onClick={()=>setFlipped(!flipped)} variant="ghost" size="icon" aria-label="Flip"><RotateCcw/></Button></div></div></section>
+    <section className="mt-8"><div className="flex items-center justify-between"><div><h2 className="text-xl font-bold">Terms in this set</h2><p className="mt-1 text-sm text-muted-foreground">Tap any card to start from there.</p></div><Button variant="outline"><PencilLine/> Edit</Button></div><div className="mt-4 space-y-2">{set.cards.map((item,i)=><button key={`${item.term}-${i}`} onClick={()=>{setIndex(i);window.scrollTo({top:0,behavior:'smooth'})}} className="grid w-full gap-3 rounded-xl border border-border bg-card p-4 text-left transition hover:border-[#464d5a] sm:grid-cols-[.8fr_1.5fr_90px] sm:items-center"><p className="font-semibold">{item.term}</p><p className="text-sm leading-6 text-muted-foreground">{item.definition}</p><div className="flex items-center gap-2"><div className="h-1.5 flex-1 rounded-full bg-[#292d36]"><div className="h-full rounded-full bg-[#6ce5d1]" style={{width:`${item.mastery}%`}}/></div><span className="text-xs font-bold text-muted-foreground">{item.mastery}%</span></div></button>)}</div></section>
+  </div>;
 }
 
-function FlashcardsView({ setMode }: { setMode: (m: Mode) => void }) {
-  const [index, setIndex] = useState(0); const [flipped, setFlipped] = useState(false); const [starred, setStarred] = useState<number[]>([]);
-  const current = cards[index];
-  const move = (n: number) => { setIndex((index + n + cards.length) % cards.length); setFlipped(false); };
-  return (
-    <div className="mx-auto max-w-5xl p-4 pb-28 sm:p-8">
-      <div className="mb-6 flex items-center gap-3"><Button onClick={() => setMode('home')} variant="ghost" size="icon"><ArrowLeft /></Button><div><p className="text-xs font-semibold uppercase tracking-wider text-[#5c4cf1]">Cell Biology Essentials</p><h2 className="text-xl font-bold">Flashcards</h2></div><span className="ml-auto text-sm font-semibold text-muted-foreground">{index + 1} / {cards.length}</span></div>
-      <Progress value={(index + 1) / cards.length * 100} className="mb-7 [&_[data-slot=progress-indicator]]:bg-[#5c4cf1]" />
-      <button onClick={() => setFlipped(!flipped)} className="group relative flex min-h-[390px] w-full items-center justify-center overflow-hidden rounded-[28px] border border-border bg-card p-10 text-center shadow-[0_18px_55px_rgba(31,43,68,.09)] transition hover:border-[#a29af6] sm:min-h-[460px]">
-        <div className="absolute left-6 top-6 rounded-full bg-muted px-3 py-1.5 text-xs font-bold uppercase tracking-wider text-muted-foreground">{flipped ? 'Definition' : 'Term'}</div>
-        <Star onClick={(e) => { e.stopPropagation(); setStarred(s => s.includes(index) ? s.filter(i => i !== index) : [...s, index]); }} className={`absolute right-6 top-6 size-6 ${starred.includes(index) ? 'fill-[#ffbc57] text-[#e79c24]' : 'text-muted-foreground'}`} />
-        <p className={`${flipped ? 'max-w-2xl text-[clamp(1.3rem,3vw,2rem)] leading-relaxed' : 'text-[clamp(2.1rem,7vw,4.2rem)]'} font-bold tracking-[-.045em] transition`}>{flipped ? current.definition : current.term}</p>
-        <span className="absolute bottom-6 text-xs font-medium text-muted-foreground">Click the card to {flipped ? 'see the term' : 'flip'}</span>
-      </button>
-      <div className="mt-6 flex items-center justify-center gap-3"><Button variant="outline" size="icon-lg" onClick={() => setIndex(Math.floor(Math.random()*cards.length))} aria-label="Shuffle"><Shuffle /></Button><Button variant="outline" size="icon-lg" onClick={() => move(-1)} aria-label="Previous"><ArrowLeft /></Button><Button onClick={() => setFlipped(!flipped)} className="h-12 min-w-40 rounded-xl bg-[#5c4cf1] text-base font-bold text-white"><RotateCcw /> Flip card</Button><Button variant="outline" size="icon-lg" onClick={() => move(1)} aria-label="Next"><ArrowRight /></Button><Button variant="outline" size="icon-lg" aria-label="Read aloud"><Volume2 /></Button></div>
-    </div>
-  );
+function GeneratorView({ file, setFile, onGenerated, setMode }: {file:File|null; setFile:(f:File|null)=>void; onGenerated:(s:StudySet)=>void; setMode:(m:Mode)=>void}) {
+  const [source,setSource]=useState('upload'); const [notes,setNotes]=useState(''); const [count,setCount]=useState(12); const [generating,setGenerating]=useState(false); const [error,setError]=useState('');
+  const generate=async()=>{setError('');setGenerating(true);try{const form=new FormData();if(file)form.append('file',file);else form.append('text',notes);form.append('count',String(count));form.append('title',file?.name.replace(/\.[^.]+$/,'')||'New study set');const response=await fetch('/api/ai/cards',{method:'POST',body:form});const data=await response.json() as {error?:string;set?:StudySet};if(!response.ok||!data.set)throw new Error(data.error||'Could not generate cards.');onGenerated(data.set)}catch(e){const text=notes.trim()||(file&&file.type.startsWith('text/')?await file.text():'');if(text){onGenerated(makeLocalSet(text,file?.name||'Pasted notes',count))}else setError(e instanceof Error?e.message:'Could not generate cards.')}finally{setGenerating(false)}};
+  return <div className="mx-auto max-w-[1050px] p-4 pb-28 sm:p-7 lg:p-9"><button onClick={()=>{setFile(null);setMode('home')}} className="mb-6 flex items-center gap-2 text-sm font-bold text-muted-foreground hover:text-white"><ArrowLeft className="size-4"/> Back home</button><div className="grid gap-6 lg:grid-cols-[1fr_330px]"><section className="rounded-[26px] border border-border bg-card p-5 sm:p-7"><div className="flex items-center gap-3"><div className="grid size-11 place-items-center rounded-2xl bg-[#173b38] text-[#6ce5d1]"><WandSparkles className="size-5"/></div><div><p className="text-xs font-bold uppercase tracking-wider text-[#6ce5d1]">AI set builder</p><h1 className="text-2xl font-bold tracking-[-.04em]">Create from your material</h1></div></div><Tabs value={source} onValueChange={setSource} className="mt-7"><TabsList className="h-11 w-full rounded-xl bg-[#20242c] p-1"><TabsTrigger value="upload" className="h-full">Upload</TabsTrigger><TabsTrigger value="paste" className="h-full">Paste text</TabsTrigger><TabsTrigger value="topic" className="h-full">Topic</TabsTrigger></TabsList><TabsContent value="upload" className="mt-5"><label htmlFor="generator-file" className="flex min-h-64 cursor-pointer flex-col items-center justify-center rounded-2xl border border-dashed border-[#414856] bg-[#11141a] p-8 text-center transition hover:border-[#6ce5d1]/70"><div className="grid size-12 place-items-center rounded-2xl bg-[#20302f] text-[#6ce5d1]"><Upload className="size-5"/></div>{file?<><p className="mt-4 font-bold">{file.name}</p><p className="mt-1 text-sm text-muted-foreground">{(file.size/1024/1024).toFixed(2)} MB · ready to analyze</p><span className="mt-4 text-sm font-bold text-[#6ce5d1]">Choose another file</span></>:<><p className="mt-4 font-bold">Drop a paper or notes here</p><p className="mt-1 text-sm text-muted-foreground">PDF, DOCX, TXT, or Markdown</p></>}</label><input id="generator-file" type="file" accept=".pdf,.doc,.docx,.txt,.md" className="hidden" onChange={e=>setFile(e.target.files?.[0]||null)}/></TabsContent><TabsContent value="paste" className="mt-5"><textarea value={notes} onChange={e=>setNotes(e.target.value)} placeholder="Paste lecture notes, a reading, or a study guide…" className="min-h-64 w-full resize-none rounded-2xl border border-[#353a45] bg-[#11141a] p-5 text-sm leading-6 text-white outline-none focus:border-[#6ce5d1]"/></TabsContent><TabsContent value="topic" className="mt-5"><textarea value={notes} onChange={e=>setNotes(e.target.value)} placeholder="Describe what you need to learn, e.g. ‘AP Biology cellular respiration, medium difficulty’" className="min-h-64 w-full resize-none rounded-2xl border border-[#353a45] bg-[#11141a] p-5 text-sm leading-6 text-white outline-none focus:border-[#6ce5d1]"/></TabsContent></Tabs>{error&&<div className="mt-4 rounded-xl border border-[#6d3340] bg-[#351d24] p-4 text-sm text-[#ff9bad]">{error}</div>}</section><aside className="h-fit rounded-[26px] border border-border bg-card p-5"><h2 className="font-bold">Build settings</h2><div className="mt-5"><label className="text-sm font-semibold">Number of cards</label><div className="mt-2 grid grid-cols-3 gap-2">{[8,12,20].map(v=><button key={v} onClick={()=>setCount(v)} className={`h-10 rounded-xl border text-sm font-bold ${count===v?'border-[#6ce5d1] bg-[#173b38] text-[#6ce5d1]':'border-border bg-[#181b22] text-muted-foreground'}`}>{v}</button>)}</div></div><div className="mt-5 space-y-3">{[['Key concepts','Prioritize exam-worthy ideas'],['Clear answers','One idea per card'],['Balanced mix','Definitions + application']].map(([a,b])=><div key={a} className="flex gap-3"><Check className="mt-0.5 size-4 shrink-0 text-[#6ce5d1]"/><div><p className="text-sm font-semibold">{a}</p><p className="text-xs leading-5 text-muted-foreground">{b}</p></div></div>)}</div><Button onClick={generate} disabled={generating||(!file&&!notes.trim())} className="mt-7 h-12 w-full rounded-xl bg-[#6ce5d1] text-base font-bold text-[#071612] hover:bg-[#88eddd]">{generating?<><LoaderCircle className="animate-spin"/> Reading your material…</>:<><Sparkles/> Generate study set</>}</Button><p className="mt-3 text-center text-[11px] leading-4 text-muted-foreground">Your material is used only to build this study set.</p></aside></div></div>;
 }
 
-function LearnView({ setMode }: { setMode: (m: Mode) => void }) {
-  const [index, setIndex] = useState(0); const [answer, setAnswer] = useState(''); const [feedback, setFeedback] = useState<'idle'|'right'|'try'>('idle');
-  const card = cards[index];
-  const check = () => setFeedback(answer.trim().toLowerCase().includes(card.term.toLowerCase()) ? 'right' : 'try');
-  const next = () => { setIndex((index+1)%cards.length); setAnswer(''); setFeedback('idle'); };
-  return <div className="mx-auto max-w-4xl p-4 pb-28 sm:p-8"><div className="mb-6 flex items-center gap-3"><Button onClick={() => setMode('home')} variant="ghost" size="icon"><ArrowLeft /></Button><div><p className="text-xs font-semibold uppercase tracking-wider text-[#147d82]">Adaptive session</p><h2 className="text-xl font-bold">Learn</h2></div><span className="ml-auto rounded-full bg-accent px-3 py-1.5 text-xs font-bold text-accent-foreground">+20 XP</span></div><Progress value={(index+1)/cards.length*100} className="mb-8 [&_[data-slot=progress-indicator]]:bg-[#37b6c7]" /><section className="rounded-[28px] border border-border bg-card p-6 shadow-[0_18px_55px_rgba(31,43,68,.07)] sm:p-10"><div className="flex items-center gap-2 text-sm font-semibold text-muted-foreground"><BrainCircuit className="size-4 text-[#37b6c7]" /> Type the term</div><p className="mt-8 text-[clamp(1.25rem,3vw,1.75rem)] font-semibold leading-relaxed tracking-tight">{card.definition}</p><input value={answer} onChange={e=>{setAnswer(e.target.value);setFeedback('idle')}} onKeyDown={e=>e.key==='Enter'&&check()} placeholder="Your answer…" className="mt-10 h-14 w-full rounded-xl border-2 border-input bg-background px-4 text-lg font-medium outline-none transition focus:border-[#5c4cf1]" />{feedback !== 'idle' && <div className={`mt-4 flex items-center gap-3 rounded-xl p-4 text-sm font-medium ${feedback==='right'?'bg-[#edf8df] text-[#315d0a]':'bg-[#fff0e1] text-[#8c4a08]'}`}>{feedback==='right'?<Check className="size-5"/>:<Sparkles className="size-5"/>}{feedback==='right'?'Exactly right. Nice recall!':<>Almost — the answer is <strong>{card.term}</strong>.</>}</div>}<div className="mt-8 flex items-center justify-between"><Button variant="ghost" className="text-muted-foreground"><CircleHelp /> Give me a hint</Button>{feedback==='right'||feedback==='try'?<Button onClick={next} className="h-11 rounded-xl bg-[#5c4cf1] px-6 font-bold text-white">Next question <ArrowRight /></Button>:<Button onClick={check} disabled={!answer.trim()} className="h-11 rounded-xl bg-[#5c4cf1] px-6 font-bold text-white">Check answer</Button>}</div></section></div>;
-}
+function makeLocalSet(text:string,name:string,count:number):StudySet { const cleaned=text.replace(/\s+/g,' ').trim(); const sentences=cleaned.split(/(?<=[.!?])\s+/).filter(s=>s.length>28).slice(0,count); const made=sentences.map((sentence,i)=>{const match=sentence.match(/^(.{3,55}?)\s+(?:is|are|means|refers to)\s+(.+)$/i); return match?{term:match[1].replace(/^[•\-\d.\s]+/,''),definition:match[2],mastery:0}:{term:`Key idea ${i+1}`,definition:sentence,mastery:0}}); return {id:`set-${Date.now()}`,title:name.replace(/\.[^.]+$/,'')||'New study set',subject:'AI generated',cards:made.length?made:biologyCards.slice(0,Math.min(count,8)),source:name}; }
 
-function TestView({ setMode }: { setMode: (m: Mode) => void }) {
-  const [selected, setSelected] = useState<string>('');
-  const options = ['A selectively permeable cell boundary', 'A structure that makes proteins', 'The organelle that contains DNA', 'A network that transports lipids'];
-  return <div className="mx-auto max-w-4xl p-4 pb-28 sm:p-8"><div className="mb-6 flex items-center gap-3"><Button onClick={()=>setMode('home')} variant="ghost" size="icon"><ArrowLeft/></Button><div><p className="text-xs font-semibold uppercase tracking-wider text-[#9a5b00]">Question 1 of 8</p><h2 className="text-xl font-bold">Practice test</h2></div><div className="ml-auto flex items-center gap-2 text-sm font-semibold text-muted-foreground"><Clock3 className="size-4"/> 09:42</div></div><Progress value={12.5} className="mb-8 [&_[data-slot=progress-indicator]]:bg-[#ffbc57]"/><section className="rounded-[28px] border border-border bg-card p-6 shadow-[0_18px_55px_rgba(31,43,68,.07)] sm:p-10"><span className="rounded-lg bg-[#fff0d8] px-2.5 py-1 text-xs font-bold text-[#9a5b00]">MULTIPLE CHOICE</span><h3 className="mt-6 text-[clamp(1.3rem,3vw,1.8rem)] font-bold tracking-tight">Which best describes the cell membrane?</h3><div className="mt-7 grid gap-3">{options.map((option,i)=><button key={option} onClick={()=>setSelected(option)} className={`flex items-center gap-4 rounded-xl border-2 p-4 text-left text-sm font-medium transition ${selected===option?'border-[#5c4cf1] bg-[#f1efff] dark:bg-[#28244c]':'border-border hover:border-[#b3acf7]'}`}><span className={`grid size-8 shrink-0 place-items-center rounded-lg text-xs font-bold ${selected===option?'bg-[#5c4cf1] text-white':'bg-muted text-muted-foreground'}`}>{String.fromCharCode(65+i)}</span>{option}</button>)}</div><div className="mt-8 flex justify-end"><Button disabled={!selected} className="h-11 rounded-xl bg-[#5c4cf1] px-6 font-bold text-white">Submit answer <ArrowRight/></Button></div></section></div>;
-}
+function FlashcardsView({set,setMode}:{set:StudySet;setMode:(m:Mode)=>void}) { const [i,setI]=useState(0);const [flip,setFlip]=useState(false);const move=(n:number)=>{setI((i+n+set.cards.length)%set.cards.length);setFlip(false)};return <StudyShell title="Flashcards" color="#6ce5d1" setMode={setMode} progress={(i+1)/set.cards.length*100}><button onClick={()=>setFlip(!flip)} className="relative flex min-h-[420px] w-full items-center justify-center rounded-[26px] border border-[#363c48] bg-[#242a35] p-10 text-center shadow-2xl"><span className="absolute left-6 top-5 text-xs font-bold uppercase tracking-wider text-muted-foreground">{flip?'Definition':'Term'}</span><p className={`${flip?'max-w-2xl text-2xl leading-relaxed':'text-[clamp(2.4rem,7vw,4.5rem)]'} font-bold tracking-[-.05em]`}>{flip?set.cards[i].definition:set.cards[i].term}</p><span className="absolute bottom-5 text-xs text-muted-foreground">Click to flip</span></button><div className="mt-5 flex justify-center gap-3"><Button variant="secondary" size="icon-lg" onClick={()=>move(-1)}><ArrowLeft/></Button><Button onClick={()=>setFlip(!flip)} className="h-11 min-w-36 rounded-xl bg-[#6ce5d1] font-bold text-[#071612]"><RotateCcw/> Flip</Button><Button variant="secondary" size="icon-lg" onClick={()=>move(1)}><ArrowRight/></Button></div></StudyShell> }
 
-function MatchView({ setMode }: { setMode: (m: Mode) => void }) {
-  const pairs = cards.slice(0,3); const entries = useMemo(()=>[...pairs.map((c,i)=>({text:c.term,key:i,type:'term'})),...pairs.map((c,i)=>({text:c.definition,key:i,type:'def'}))].sort(()=>.5-Math.random()),[]); const [chosen,setChosen]=useState<number[]>([]); const [done,setDone]=useState<number[]>([]);
-  const pick=(i:number)=>{if(done.includes(i)||chosen.includes(i))return;if(chosen.length===0){setChosen([i]);return}const first=entries[chosen[0]];const second=entries[i];if(first.key===second.key&&first.type!==second.type){setDone([...done,chosen[0],i]);setChosen([])}else{setChosen([i])}};
-  return <div className="mx-auto max-w-5xl p-4 pb-28 sm:p-8"><div className="mb-6 flex items-center gap-3"><Button onClick={()=>setMode('home')} variant="ghost" size="icon"><ArrowLeft/></Button><div><p className="text-xs font-semibold uppercase tracking-wider text-[#ae3f76]">Personal best 0:42</p><h2 className="text-xl font-bold">Match sprint</h2></div><div className="ml-auto rounded-xl bg-[#171f38] px-4 py-2 font-mono text-lg font-bold text-white">0:00</div></div><p className="mb-6 text-sm text-muted-foreground">Match every term with its definition. Choose two tiles at a time.</p><div className="grid gap-3 sm:grid-cols-2">{entries.map((entry,i)=><button key={`${entry.type}-${entry.key}`} onClick={()=>pick(i)} className={`min-h-28 rounded-2xl border-2 p-5 text-left text-sm font-semibold leading-6 transition ${done.includes(i)?'scale-[.97] border-[#9ed957] bg-[#eef9df] text-[#365b12] opacity-55':chosen.includes(i)?'border-[#5c4cf1] bg-[#efedff] text-[#3e35a0] shadow-lg':'border-border bg-card hover:-translate-y-0.5 hover:border-[#aaa3f5]'}`}>{done.includes(i)&&<Check className="mb-2 size-4"/>}{entry.text}</button>)}</div>{done.length===entries.length&&<div className="mt-6 flex items-center justify-between rounded-2xl bg-[#171f38] p-5 text-white"><div><p className="font-bold">Perfect match!</p><p className="text-sm text-[#aeb8ca]">New personal best unlocked.</p></div><Trophy className="size-8 text-[#ffbc57]"/></div>}</div>;
-}
+function LearnView({set,setMode}:{set:StudySet;setMode:(m:Mode)=>void}) {const [i,setI]=useState(0);const [answer,setAnswer]=useState('');const [status,setStatus]=useState('');const check=()=>setStatus(answer.toLowerCase().includes(set.cards[i].term.toLowerCase())?'right':'wrong');return <StudyShell title="Learn" color="#8c7df7" setMode={setMode} progress={(i+1)/set.cards.length*100}><div className="rounded-[26px] border border-border bg-card p-6 sm:p-9"><p className="text-xs font-bold uppercase tracking-wider text-[#8c7df7]">Type the term</p><h2 className="mt-7 text-[clamp(1.25rem,3vw,1.8rem)] font-semibold leading-relaxed">{set.cards[i].definition}</h2><input value={answer} onChange={e=>{setAnswer(e.target.value);setStatus('')}} onKeyDown={e=>e.key==='Enter'&&check()} placeholder="Your answer…" className="mt-9 h-14 w-full rounded-xl border-2 border-input bg-[#11141a] px-4 text-lg outline-none focus:border-[#8c7df7]"/>{status&&<div className={`mt-4 rounded-xl p-4 text-sm font-semibold ${status==='right'?'bg-[#173b38] text-[#6ce5d1]':'bg-[#3c2522] text-[#ffc18f]'}`}>{status==='right'?'That’s right — strong recall!':`Almost. The answer is ${set.cards[i].term}.`}</div>}<div className="mt-7 flex justify-end">{status?<Button onClick={()=>{setI((i+1)%set.cards.length);setAnswer('');setStatus('')}} className="bg-[#8c7df7] font-bold text-white">Next question<ArrowRight/></Button>:<Button onClick={check} disabled={!answer.trim()} className="bg-[#8c7df7] font-bold text-white">Check answer</Button>}</div></div></StudyShell>}
 
-function LibraryView({ setMode }: { setMode: (m: Mode) => void }) {
-  const [created,setCreated]=useState(false);
-  return <div className="mx-auto max-w-[1100px] p-4 pb-28 sm:p-8"><div className="flex items-end justify-between"><div><p className="text-sm text-muted-foreground">Everything you’re learning, in one place.</p><h2 className="mt-1 text-3xl font-bold tracking-[-.045em]">My library</h2></div><Dialog><DialogTrigger render={<Button className="h-10 rounded-xl bg-[#5c4cf1] px-4 font-bold text-white"/>}><Plus/> New set</DialogTrigger><DialogContent className="sm:max-w-xl"><DialogHeader><DialogTitle>Create a study set</DialogTitle><DialogDescription>Paste terms and definitions, one pair per line. Use a tab or dash between them.</DialogDescription></DialogHeader><label className="text-sm font-semibold">Title<input defaultValue="Spanish vocabulary" className="mt-2 h-11 w-full rounded-xl border bg-background px-3 outline-none focus:border-[#5c4cf1]"/></label><label className="text-sm font-semibold">Terms<textarea defaultValue={'hola — hello\ngracias — thank you\nlibro — book'} className="mt-2 min-h-36 w-full resize-none rounded-xl border bg-background p-3 font-mono text-sm outline-none focus:border-[#5c4cf1]"/></label><DialogFooter><Button onClick={()=>setCreated(true)} className="bg-[#5c4cf1] text-white">Create 3 cards</Button></DialogFooter></DialogContent></Dialog></div>{created&&<div className="mt-6 flex items-center gap-3 rounded-xl border border-[#b9dfa0] bg-[#f0f9e8] p-4 text-sm font-semibold text-[#315d0a]"><Check className="size-5"/> Spanish vocabulary was added to your library.</div>}<Tabs defaultValue="sets" className="mt-8"><TabsList variant="line" className="gap-5"><TabsTrigger value="sets">Study sets</TabsTrigger><TabsTrigger value="folders">Folders</TabsTrigger><TabsTrigger value="favorites">Favorites</TabsTrigger></TabsList><TabsContent value="sets" className="mt-6 grid gap-4 sm:grid-cols-2"><button onClick={()=>setMode('flashcards')} className="rounded-2xl border border-border bg-card p-5 text-left shadow-sm transition hover:border-[#9d95f5] hover:shadow-md"><div className="flex items-center justify-between"><span className="rounded-lg bg-[#e8e5ff] px-2.5 py-1 text-xs font-bold text-[#5144d7]">BIOLOGY</span><MoreHorizontal className="size-5 text-muted-foreground"/></div><h3 className="mt-8 text-lg font-bold">Cell Biology Essentials</h3><p className="mt-1 text-sm text-muted-foreground">8 terms · 74% mastered</p><Progress value={74} className="mt-5 [&_[data-slot=progress-indicator]]:bg-[#5c4cf1]"/></button><button className="rounded-2xl border border-border bg-card p-5 text-left shadow-sm transition hover:border-[#9d95f5] hover:shadow-md"><div className="flex items-center justify-between"><span className="rounded-lg bg-[#dff5f3] px-2.5 py-1 text-xs font-bold text-[#147d82]">SPANISH</span><MoreHorizontal className="size-5 text-muted-foreground"/></div><h3 className="mt-8 text-lg font-bold">Everyday Spanish</h3><p className="mt-1 text-sm text-muted-foreground">24 terms · 61% mastered</p><Progress value={61} className="mt-5 [&_[data-slot=progress-indicator]]:bg-[#37b6c7]"/></button></TabsContent><TabsContent value="folders" className="mt-6 rounded-2xl border border-dashed p-12 text-center"><FolderOpen className="mx-auto size-8 text-muted-foreground"/><p className="mt-3 font-semibold">Folders keep classes organized</p></TabsContent><TabsContent value="favorites" className="mt-6 rounded-2xl border border-dashed p-12 text-center"><Star className="mx-auto size-8 text-muted-foreground"/><p className="mt-3 font-semibold">Star a set to find it here</p></TabsContent></Tabs></div>;
-}
+function TestView({set,setMode}:{set:StudySet;setMode:(m:Mode)=>void}) {const [selected,setSelected]=useState('');const right=set.cards[0].definition;const options=useMemo(()=>[right,...set.cards.slice(1,4).map(c=>c.definition)].sort(()=>.5-Math.random()),[set]);return <StudyShell title="Practice test" color="#80a8ff" setMode={setMode} progress={12.5}><div className="rounded-[26px] border border-border bg-card p-6 sm:p-9"><span className="rounded-lg bg-[#1f304d] px-2.5 py-1 text-xs font-bold text-[#80a8ff]">MULTIPLE CHOICE</span><h2 className="mt-6 text-2xl font-bold">What best defines “{set.cards[0].term}”?</h2><div className="mt-6 grid gap-3">{options.map((o,i)=><button key={o} onClick={()=>setSelected(o)} className={`flex items-center gap-4 rounded-xl border-2 p-4 text-left text-sm leading-6 transition ${selected===o?'border-[#80a8ff] bg-[#1b293f]':'border-border bg-[#12151a] hover:border-[#4a5260]'}`}><span className={`grid size-8 shrink-0 place-items-center rounded-lg font-bold ${selected===o?'bg-[#80a8ff] text-[#0d1728]':'bg-[#282c34]'}`}>{String.fromCharCode(65+i)}</span>{o}</button>)}</div><div className="mt-7 flex justify-end"><Button disabled={!selected} className="bg-[#80a8ff] font-bold text-[#0d1728]">Submit answer<ArrowRight/></Button></div></div></StudyShell>}
 
-function ProgressView() {
-  const days=[38,62,44,82,55,74,68];
-  const stats = [{icon:Flame,value:'9 days',label:'Current streak'},{icon:Clock3,value:'3h 42m',label:'Studied this week'},{icon:Trophy,value:'186',label:'Terms mastered'}];
-  return <div className="mx-auto max-w-[1100px] p-4 pb-28 sm:p-8"><p className="text-sm text-muted-foreground">Your effort is turning into long-term memory.</p><h2 className="mt-1 text-3xl font-bold tracking-[-.045em]">Progress</h2><div className="mt-8 grid gap-4 sm:grid-cols-3">{stats.map(({icon:Icon,value,label})=><div key={label} className="rounded-2xl border bg-card p-5"><Icon className="size-5 text-[#5c4cf1]"/><p className="mt-5 text-2xl font-bold tracking-tight">{value}</p><p className="mt-1 text-sm text-muted-foreground">{label}</p></div>)}</div><div className="mt-5 rounded-2xl border bg-card p-6"><div className="flex items-center justify-between"><div><h3 className="font-bold">Study activity</h3><p className="text-sm text-muted-foreground">Minutes focused this week</p></div><span className="rounded-lg bg-accent px-2.5 py-1 text-xs font-bold text-accent-foreground">+18%</span></div><div className="mt-10 flex h-52 items-end gap-3 sm:gap-5">{days.map((v,i)=><div key={i} className="flex flex-1 flex-col items-center gap-2"><div className="w-full rounded-t-lg bg-[#5c4cf1] transition hover:bg-[#7669f4]" style={{height:`${v*2}px`}}/><span className="text-xs text-muted-foreground">{['M','T','W','T','F','S','S'][i]}</span></div>)}</div></div></div>;
-}
+function MatchView({set,setMode}:{set:StudySet;setMode:(m:Mode)=>void}) {const pairs=set.cards.slice(0,3);const entries=useMemo(()=>[...pairs.map((c,i)=>({text:c.term,key:i,type:'t'})),...pairs.map((c,i)=>({text:c.definition,key:i,type:'d'}))].sort(()=>.5-Math.random()),[set]);const [chosen,setChosen]=useState<number[]>([]);const [done,setDone]=useState<number[]>([]);const pick=(i:number)=>{if(done.includes(i))return;if(!chosen.length){setChosen([i]);return}const a=entries[chosen[0]],b=entries[i];if(a.key===b.key&&a.type!==b.type){setDone([...done,chosen[0],i]);setChosen([])}else setChosen([i])};return <StudyShell title="Match sprint" color="#f47bb5" setMode={setMode} progress={done.length/entries.length*100}><div className="mb-4 flex justify-between text-sm text-muted-foreground"><span>Match each term with its definition</span><span className="font-mono font-bold text-white">0:00</span></div><div className="grid gap-3 sm:grid-cols-2">{entries.map((e,i)=><button key={`${e.type}-${e.key}`} onClick={()=>pick(i)} className={`min-h-28 rounded-2xl border-2 p-5 text-left text-sm font-semibold leading-6 transition ${done.includes(i)?'border-[#6ce5d1] bg-[#173b38] text-[#6ce5d1] opacity-50':chosen.includes(i)?'border-[#f47bb5] bg-[#3c2432]':'border-border bg-card hover:border-[#4b5260]'}`}>{done.includes(i)&&<Check className="mb-2 size-4"/>}{e.text}</button>)}</div></StudyShell>}
 
-function MobileNav({ mode, setMode }: { mode: Mode; setMode: (m: Mode) => void }) {
-  const links = [{icon:Home,id:'home' as Mode,label:'Today'},{icon:Library,id:'library' as Mode,label:'Library'},{icon:BrainCircuit,id:'learn' as Mode,label:'Learn'},{icon:BarChart3,id:'progress' as Mode,label:'Progress'}];
-  return <nav className="fixed inset-x-3 bottom-3 z-40 flex items-center justify-around rounded-2xl border border-white/10 bg-[#111b31]/95 px-2 py-2 text-[#99a5ba] shadow-2xl backdrop-blur lg:hidden">{links.map(({icon:Icon,id,label})=><button key={id} onClick={()=>setMode(id)} className={`flex min-w-16 flex-col items-center gap-1 rounded-xl px-2 py-1.5 text-[.67rem] font-semibold ${mode===id?'bg-[#29344e] text-[#aee66c]':'hover:text-white'}`}><Icon className="size-5"/>{label}</button>)}</nav>;
-}
+function StudyShell({title,color,progress,setMode,children}:{title:string;color:string;progress:number;setMode:(m:Mode)=>void;children:React.ReactNode}) {return <div className="mx-auto max-w-4xl p-4 pb-28 sm:p-8"><div className="mb-5 flex items-center gap-3"><Button onClick={()=>setMode('set')} variant="ghost" size="icon"><ArrowLeft/></Button><div><p className="text-xs font-bold uppercase tracking-wider" style={{color}}>Cell Biology Essentials</p><h1 className="text-xl font-bold">{title}</h1></div><span className="ml-auto text-sm font-bold text-muted-foreground">Focus mode</span></div><Progress value={progress} className="mb-7" style={{'--primary':color} as React.CSSProperties}/>{children}</div>}
+
+function LibraryView({setMode}:{setMode:(m:Mode)=>void}) {return <div className="mx-auto max-w-[1100px] p-4 pb-28 sm:p-8"><p className="text-sm text-muted-foreground">All your material, organized and ready to study.</p><h1 className="mt-1 text-3xl font-bold tracking-[-.05em]">My library</h1><Tabs defaultValue="sets" className="mt-8"><TabsList variant="line" className="gap-5"><TabsTrigger value="sets">Study sets</TabsTrigger><TabsTrigger value="materials">Source materials</TabsTrigger><TabsTrigger value="folders">Folders</TabsTrigger></TabsList><TabsContent value="sets" className="mt-6 grid gap-4 sm:grid-cols-2"><LibraryCard title="Cell Biology Essentials" meta="8 terms · 74% mastered" color="from-[#2c2854] to-[#183e3b]" onClick={()=>setMode('set')}/><LibraryCard title="Everyday Spanish" meta="24 terms · 61% mastered" color="from-[#3c2637] to-[#3a321a]" onClick={()=>setMode('set')}/></TabsContent><TabsContent value="materials" className="mt-6"><div className="rounded-2xl border bg-card p-5"><div className="flex items-center gap-4"><div className="grid size-11 place-items-center rounded-xl bg-[#3b242d] text-[#ff8eab]"><FileText/></div><div><p className="font-bold">Chapter 4 notes.pdf</p><p className="text-sm text-muted-foreground">PDF · 2.4 MB · 8 cards generated</p></div><CheckCircle2 className="ml-auto size-5 text-[#6ce5d1]"/></div></div></TabsContent><TabsContent value="folders" className="mt-6 rounded-2xl border border-dashed p-12 text-center"><FolderClosed className="mx-auto size-8 text-muted-foreground"/><p className="mt-3 font-bold">Create a folder for each class</p></TabsContent></Tabs></div>}
+function LibraryCard({title,meta,color,onClick}:{title:string;meta:string;color:string;onClick:()=>void}) {return <button onClick={onClick} className="overflow-hidden rounded-2xl border bg-card text-left transition hover:-translate-y-1 hover:border-[#4b5260]"><div className={`h-32 bg-gradient-to-br ${color} p-5`}><div className="grid size-10 place-items-center rounded-xl border border-white/10 bg-white/10 text-[#6ce5d1]"><Layers3/></div></div><div className="p-5"><h3 className="text-lg font-bold">{title}</h3><p className="mt-1 text-sm text-muted-foreground">{meta}</p></div></button>}
+
+function ProgressView() {const bars=[42,68,50,84,62,76,58];return <div className="mx-auto max-w-[1050px] p-4 pb-28 sm:p-8"><p className="text-sm text-muted-foreground">Your work is turning into long-term memory.</p><h1 className="mt-1 text-3xl font-bold tracking-[-.05em]">Progress</h1><div className="mt-7 grid gap-4 sm:grid-cols-3">{[[Flame,'9 days','Current streak'],[Clock3,'3h 42m','Studied this week'],[Trophy,'186','Terms mastered']].map(([Icon,v,l])=><div key={String(l)} className="rounded-2xl border bg-card p-5"><Icon className="size-5 text-[#6ce5d1]"/><p className="mt-5 text-2xl font-bold">{String(v)}</p><p className="text-sm text-muted-foreground">{String(l)}</p></div>)}</div><div className="mt-5 rounded-2xl border bg-card p-6"><h2 className="font-bold">Focus minutes</h2><p className="text-sm text-muted-foreground">This week</p><div className="mt-10 flex h-52 items-end gap-4">{bars.map((h,i)=><div key={i} className="flex flex-1 flex-col items-center gap-2"><div className="w-full rounded-t-lg bg-gradient-to-t from-[#4d42a6] to-[#6ce5d1]" style={{height:`${h*2}px`}}/><span className="text-xs text-muted-foreground">{['M','T','W','T','F','S','S'][i]}</span></div>)}</div></div></div>}
+
+function Tutor({open,setOpen,set}:{open:boolean;setOpen:(v:boolean)=>void;set:StudySet}) {const [question,setQuestion]=useState('');const [messages,setMessages]=useState([{role:'ai',text:`I’m ready to help with ${set.title}. Ask for a simpler explanation, an example, a quiz, or help finding a weak spot.`}]);const [thinking,setThinking]=useState(false);const send=async()=>{if(!question.trim())return;const q=question;setMessages(m=>[...m,{role:'user',text:q}]);setQuestion('');setThinking(true);try{const r=await fetch('/api/ai/tutor',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({question:q,set})});const data=await r.json() as {answer?:string};setMessages(m=>[...m,{role:'ai',text:data.answer||`Think of ${set.cards[0].term} as a specialized part of the cell. Start by connecting its structure to its job: ${set.cards[0].definition}`}])}catch{setMessages(m=>[...m,{role:'ai',text:`A useful way to remember ${set.cards[0].term}: connect its structure to its job. ${set.cards[0].definition}`}])}finally{setThinking(false)}};return <Sheet open={open} onOpenChange={setOpen}><SheetContent className="w-[min(92vw,430px)] border-[#2c313b] bg-[#11141a] sm:max-w-[430px]"><SheetHeader className="border-b border-border p-5"><div className="flex items-center gap-3"><div className="grid size-10 place-items-center rounded-xl bg-[#173b38] text-[#6ce5d1]"><Sparkles className="size-5"/></div><div><SheetTitle className="text-lg font-bold">Quizbuddy AI</SheetTitle><SheetDescription>Grounded in your study set</SheetDescription></div></div></SheetHeader><div className="thin-scrollbar flex-1 space-y-4 overflow-y-auto p-5">{messages.map((m,i)=><div key={i} className={`max-w-[88%] rounded-2xl px-4 py-3 text-sm leading-6 ${m.role==='ai'?'bg-[#20242c] text-[#dce1ea]':'ml-auto bg-[#6ce5d1] text-[#071612]'}`}>{m.text}</div>)}{thinking&&<div className="shimmer h-14 w-3/4 rounded-2xl"/>}<div className="flex flex-wrap gap-2">{['Explain simply','Quiz me','Give an example'].map(q=><button key={q} onClick={()=>setQuestion(q)} className="rounded-full border border-[#353b46] px-3 py-1.5 text-xs font-semibold text-[#a6adba] hover:border-[#6ce5d1] hover:text-[#6ce5d1]">{q}</button>)}</div></div><SheetFooter className="border-t border-border p-4"><div className="flex items-end gap-2 rounded-2xl border border-[#373d48] bg-[#191d24] p-2"><textarea value={question} onChange={e=>setQuestion(e.target.value)} onKeyDown={e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();send()}}} rows={1} placeholder="Ask about your material…" className="max-h-28 min-h-10 flex-1 resize-none bg-transparent px-2 py-2 text-sm outline-none"/><Button onClick={send} disabled={!question.trim()||thinking} size="icon" className="rounded-xl bg-[#6ce5d1] text-[#071612]"><ArrowRight/></Button></div></SheetFooter></SheetContent></Sheet>}
+
+function MobileNav({mode,setMode,setTutorOpen}:{mode:Mode;setMode:(m:Mode)=>void;setTutorOpen:(v:boolean)=>void}) {return <nav className="fixed inset-x-3 bottom-3 z-40 flex justify-around rounded-2xl border border-[#30353f] bg-[#15181f]/95 p-2 shadow-2xl backdrop-blur lg:hidden">{[[Home,'home','Home'],[Library,'library','Library'],[Sparkles,'ai','AI'],[BarChart3,'progress','Progress']].map(([Icon,id,label])=><button key={String(id)} onClick={()=>id==='ai'?setTutorOpen(true):setMode(id as Mode)} className={`flex min-w-16 flex-col items-center gap-1 rounded-xl px-2 py-1 text-[11px] font-bold ${mode===id?'bg-[#252a32] text-[#6ce5d1]':'text-[#7f8795]'}`}><Icon className="size-5"/>{String(label)}</button>)}</nav>}
 
 export default function QuizBuddy() {
-  const [mode,setMode]=useState<Mode>('home'); const [dark,setDark]=useState(false);
-  useEffect(() => {
-    const context = document.modelContext;
-    if (!context?.registerTool) return;
-    const lifecycle = new AbortController();
-    const studyModes = ['flashcards', 'learn', 'test', 'match'] as const;
-    const tool: WebMCPTool = {
-      name: 'start_study_session',
-      title: 'Start a study session',
-      description: 'Open one of quizbuddy’s study modes for the active Cell Biology Essentials set.',
-      inputSchema: {
-        type: 'object',
-        properties: { mode: { type: 'string', enum: studyModes } },
-        required: ['mode'],
-        additionalProperties: false,
-      },
-      annotations: { readOnlyHint: false, untrustedContentHint: false },
-      execute(input) {
-        const requested = (input as { mode?: string } | null)?.mode;
-        if (!studyModes.includes(requested as typeof studyModes[number])) {
-          throw new Error('Choose flashcards, learn, test, or match.');
-        }
-        setMode(requested as Mode);
-        return { status: 'started', mode: requested, set: 'Cell Biology Essentials' };
-      },
-    };
-    try {
-      void Promise.resolve(context.registerTool(tool, { signal: lifecycle.signal })).catch(() => undefined);
-    } catch {
-      // The app remains fully usable when WebMCP is unavailable.
-    }
-    return () => lifecycle.abort();
-  }, []);
-  const view = mode==='home'?<HomeView setMode={setMode}/>:mode==='library'?<LibraryView setMode={setMode}/>:mode==='progress'?<ProgressView/>:mode==='flashcards'?<FlashcardsView setMode={setMode}/>:mode==='learn'?<LearnView setMode={setMode}/>:mode==='test'?<TestView setMode={setMode}/>:<MatchView setMode={setMode}/>;
-  return <div className={dark?'dark':''}><div className="min-h-screen bg-background text-foreground transition-colors"><Sidebar mode={mode} setMode={setMode}/><div className="lg:pl-[244px]"><Topbar mode={mode} setMode={setMode} dark={dark} setDark={setDark}/><main>{view}</main></div><MobileNav mode={mode} setMode={setMode}/></div></div>;
+  const [mode,setMode]=useState<Mode>('home'); const [light,setLight]=useState(false); const [tutorOpen,setTutorOpen]=useState(false); const [activeSet,setActiveSet]=useState<StudySet>(starterSet); const [file,setFile]=useState<File|null>(null); const picker=useRef<HTMLInputElement|null>(null);
+  const onFile=(e:ChangeEvent<HTMLInputElement>)=>{const next=e.target.files?.[0];if(next){setFile(next);setMode('create')}};
+  const openPicker=()=>document.getElementById('material-upload')?.click();
+  useEffect(()=>{const context=document.modelContext;if(!context?.registerTool)return;const lifecycle=new AbortController();const tool:WebMCPTool={name:'start_study_session',title:'Start a study session',description:'Open a quizbuddy study mode for the active set.',inputSchema:{type:'object',properties:{mode:{type:'string',enum:['flashcards','learn','test','match']}},required:['mode'],additionalProperties:false},annotations:{readOnlyHint:false,untrustedContentHint:false},execute(input){const requested=(input as {mode?:string})?.mode;if(!['flashcards','learn','test','match'].includes(requested||''))throw new Error('Choose flashcards, learn, test, or match.');setMode(requested as Mode);return{status:'started',mode:requested,set:activeSet.title}}};try{void Promise.resolve(context.registerTool(tool,{signal:lifecycle.signal})).catch(()=>undefined)}catch{}return()=>lifecycle.abort()},[activeSet.title]);
+  let view:React.ReactNode;if(mode==='home')view=<HomeView onFile={onFile} openPicker={openPicker} setTutorOpen={setTutorOpen} setMode={setMode}/>;else if(mode==='create')view=<GeneratorView file={file} setFile={setFile} setMode={setMode} onGenerated={s=>{setActiveSet(s);setFile(null);setMode('set')}}/>;else if(mode==='library')view=<LibraryView setMode={setMode}/>;else if(mode==='set')view=<SetView set={activeSet} setMode={setMode} setTutorOpen={setTutorOpen}/>;else if(mode==='flashcards')view=<FlashcardsView set={activeSet} setMode={setMode}/>;else if(mode==='learn')view=<LearnView set={activeSet} setMode={setMode}/>;else if(mode==='test')view=<TestView set={activeSet} setMode={setMode}/>;else if(mode==='match')view=<MatchView set={activeSet} setMode={setMode}/>;else view=<ProgressView/>;
+  return <div className={light?'light':''}><div className="min-h-screen bg-background text-foreground transition-colors"><Sidebar mode={mode} setMode={setMode} setTutorOpen={setTutorOpen}/><div className="lg:pl-[252px]"><Topbar light={light} setLight={setLight} setMode={setMode}/><main>{view}</main></div><Tutor open={tutorOpen} setOpen={setTutorOpen} set={activeSet}/><MobileNav mode={mode} setMode={setMode} setTutorOpen={setTutorOpen}/></div></div>;
 }
