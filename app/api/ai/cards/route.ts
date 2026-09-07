@@ -33,10 +33,12 @@ export async function POST(request: Request) {
     const form = await request.formData();
     const fileValue = form.get('file');
     const file = fileValue instanceof File ? fileValue : null;
-    const pastedText = String(form.get('text') ?? '').trim();
+    const textValue = form.get('text');
+    const pastedText = typeof textValue === 'string' ? textValue.trim() : '';
     const requestedCount = Number(form.get('count') ?? 12);
     const count = Math.max(6, Math.min(24, Number.isFinite(requestedCount) ? requestedCount : 12));
-    const suggestedTitle = String(form.get('title') ?? 'New study set').slice(0, 100);
+    const titleValue = form.get('title');
+    const suggestedTitle = (typeof titleValue === 'string' ? titleValue : 'New study set').slice(0, 100);
 
     if (!file && !pastedText) return Response.json({ error: 'Add a file or paste some notes first.' }, { status: 400 });
     if (file && file.size > 8 * 1024 * 1024) return Response.json({ error: 'Please choose a file smaller than 8 MB.' }, { status: 413 });
