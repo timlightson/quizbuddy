@@ -1,4 +1,4 @@
-import Link from 'next/link';
+/* eslint-disable next/no-html-link-for-pages -- Vinext's Link shim currently duplicates React during hydration. */
 import {
   ArrowRight,
   BookOpenCheck,
@@ -77,7 +77,7 @@ export default function LandingPage() {
           <a href="#workflow" className="transition hover:text-white">How it works</a>
           <a href="https://github.com/timlightson/quizbuddy" className="transition hover:text-white">Open source</a>
         </div>
-        <Link href="/study" className="ml-5 inline-flex h-10 items-center gap-2 rounded-xl bg-[#6ce5d1] px-4 text-sm font-extrabold text-[#071612] transition hover:bg-[#8aedde]">Launch app <ArrowRight className="size-4" /></Link>
+        <a href="/study" className="ml-5 inline-flex h-10 items-center gap-2 rounded-xl bg-[#6ce5d1] px-4 text-sm font-extrabold text-[#071612] transition hover:bg-[#8aedde]">Launch app <ArrowRight className="size-4" /></a>
       </nav>
 
       <section className="relative mx-auto grid max-w-[1240px] gap-14 px-5 pb-24 pt-16 sm:px-8 lg:grid-cols-[.92fr_1.08fr] lg:items-center lg:pb-32 lg:pt-24">
@@ -87,7 +87,7 @@ export default function LandingPage() {
           <h1 className="mt-6 max-w-[690px] text-[clamp(3.25rem,7.7vw,6.8rem)] font-extrabold leading-[.88] tracking-[-.075em]">Study smarter.<br /><span className="bg-gradient-to-r from-[#6ce5d1] to-[#9a8cff] bg-clip-text text-transparent">Keep it free.</span></h1>
           <p className="mt-7 max-w-xl text-[1.05rem] leading-8 text-[#9aa2af] sm:text-xl">Upload notes, readings, or papers. Quizbuddy turns them into flashcards, practice tests, games, and an AI tutor—without ads or paywalled basics.</p>
           <div className="mt-8 flex flex-wrap gap-3">
-            <Link href="/study" className="inline-flex h-13 items-center gap-2 rounded-xl bg-[#6ce5d1] px-6 text-base font-extrabold text-[#071612] transition hover:-translate-y-0.5 hover:bg-[#8aedde]"><Play className="size-4 fill-current" /> Start studying</Link>
+            <a href="/study" className="inline-flex h-13 items-center gap-2 rounded-xl bg-[#6ce5d1] px-6 text-base font-extrabold text-[#071612] transition hover:-translate-y-0.5 hover:bg-[#8aedde]"><Play className="size-4 fill-current" /> Start studying</a>
             <a href="https://github.com/timlightson/quizbuddy" className="inline-flex h-13 items-center gap-2 rounded-xl border border-[#343a46] bg-[#15181f] px-6 text-base font-extrabold text-white transition hover:-translate-y-0.5 hover:border-[#525a68]"><GitFork className="size-4" /> View on GitHub</a>
           </div>
           <div className="mt-7 flex flex-wrap gap-x-5 gap-y-2 text-xs font-bold text-[#747d8a]">{['No ads', 'No premium wall', 'Your study material stays yours'].map(item => <span key={item} className="flex items-center gap-1.5"><Check className="size-3.5 text-[#6ce5d1]" />{item}</span>)}</div>
@@ -113,9 +113,9 @@ export default function LandingPage() {
         </div>
       </section>
 
-      <section className="px-5 pb-24 sm:px-8"><div className="mx-auto max-w-[1140px] overflow-hidden rounded-[30px] border border-white/10 bg-[#f4f7f6] px-7 py-14 text-center text-[#10151b] sm:px-12"><Sparkles className="mx-auto size-7 text-[#168f81]" /><h2 className="mx-auto mt-5 max-w-3xl text-[clamp(2.2rem,5vw,4.6rem)] font-extrabold leading-[.96] tracking-[-.065em]">Your next study set is already in your notes.</h2><p className="mx-auto mt-5 max-w-xl text-[#626d73]">Bring the material. Quizbuddy will help turn it into something you can actually remember.</p><Link href="/study" className="mt-8 inline-flex h-13 items-center gap-2 rounded-xl bg-[#11161c] px-6 font-extrabold text-white">Build a study set <ArrowRight className="size-4" /></Link></div></section>
+      <section className="px-5 pb-24 sm:px-8"><div className="mx-auto max-w-[1140px] overflow-hidden rounded-[30px] border border-white/10 bg-[#f4f7f6] px-7 py-14 text-center text-[#10151b] sm:px-12"><Sparkles className="mx-auto size-7 text-[#168f81]" /><h2 className="mx-auto mt-5 max-w-3xl text-[clamp(2.2rem,5vw,4.6rem)] font-extrabold leading-[.96] tracking-[-.065em]">Your next study set is already in your notes.</h2><p className="mx-auto mt-5 max-w-xl text-[#626d73]">Bring the material. Quizbuddy will help turn it into something you can actually remember.</p><a href="/study" className="mt-8 inline-flex h-13 items-center gap-2 rounded-xl bg-[#11161c] px-6 font-extrabold text-white">Build a study set <ArrowRight className="size-4" /></a></div></section>
 
-      <footer className="border-t border-white/8 px-5 py-8 sm:px-8"><div className="mx-auto flex max-w-[1240px] flex-col gap-4 text-sm text-[#747d8a] sm:flex-row sm:items-center"><Brand /><p className="sm:ml-5">Free, focused, and built in the open.</p><div className="flex gap-5 sm:ml-auto"><Link href="/study" className="hover:text-white">Study app</Link><a href="https://github.com/timlightson/quizbuddy" className="hover:text-white">GitHub</a></div></div></footer>
+      <footer className="border-t border-white/8 px-5 py-8 sm:px-8"><div className="mx-auto flex max-w-[1240px] flex-col gap-4 text-sm text-[#747d8a] sm:flex-row sm:items-center"><Brand /><p className="sm:ml-5">Free, focused, and built in the open.</p><div className="flex gap-5 sm:ml-auto"><a href="/study" className="hover:text-white">Study app</a><a href="https://github.com/timlightson/quizbuddy" className="hover:text-white">GitHub</a></div></div></footer>
     </main>
   );
 }
