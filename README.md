@@ -1,18 +1,19 @@
 # quizbuddy
 
-Quizbuddy is an open-source AI study workspace that turns notes, readings, and papers into flashcards, practice tests, games, and guided tutoring.
+Quizbuddy is an open-source, local-first study workspace for building unlimited flashcards from finished vocabulary, notes, readings, and papers.
 
 [Open the live app](https://quizbuddy-study.timmylightson.chatgpt.site) · [Report an issue](https://github.com/timlightson/quizbuddy/issues)
 
 ## What it includes
 
-- File, pasted-note, and topic-based study set creation
-- AI-generated flashcards with an editable local fallback
-- Flashcards, adaptive learn, practice test, and matching modes
-- A study-set-aware AI tutor
-- Progress, mastery, streak, and library views
-- Responsive dark and light interfaces with no ads or premium gates
-- Cloudflare D1/R2-ready persistence and file storage
+- Unlimited term/definition import from tabs, commas, dashes, colons, `::`, CSV, TSV, or JSON
+- Local PDF, DOCX, TXT, Markdown, CSV, TSV, and JSON file reading
+- Notes-to-study-pack conversion with the original source notes preserved
+- A full editable set builder with bulk append, reorder, star, duplicate, export, and backup
+- Flashcards, adaptive Learn, mixed practice tests, Write, Match, Meteor, and Quiz Rush
+- Study guides, a set-grounded no-key study coach, text-to-speech, and answer sounds
+- Progress, mastery, streak, activity, library, theme, and grading settings
+- Responsive dark/light UI with no ads, accounts, card caps, or premium gates
 
 ## Run locally
 
@@ -20,15 +21,10 @@ Requirements: Node.js 22.13 or newer.
 
 ```bash
 npm install
-cp .env.example .env.local
 npm run dev
 ```
 
-Open `http://localhost:3000`. The app can create sets from pasted text without an API key. To enable model-generated cards and tutor responses, add an OpenAI API key to `.env.local`:
-
-```bash
-OPENAI_API_KEY=your_key_here
-```
+Open `http://localhost:3000`. No account or API key is required. Sets and progress are stored in the browser; use Settings → Export JSON to move or back up your library.
 
 ## Useful commands
 
@@ -41,7 +37,7 @@ npm run db:generate
 
 ## Stack
 
-Next.js-compatible Vinext, React, TypeScript, Tailwind CSS, shadcn/ui, Drizzle ORM, Cloudflare D1/R2, and the OpenAI Responses API.
+Next.js-compatible Vinext, React, TypeScript, Tailwind CSS, shadcn/ui, Drizzle ORM, and Cloudflare D1/R2-ready hosting.
 
 ## Contributing
 
