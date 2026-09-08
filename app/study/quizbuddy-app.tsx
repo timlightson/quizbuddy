@@ -1,4 +1,4 @@
-/* eslint-disable react/react-compiler, jsx-a11y/prefer-tag-over-role -- nested flashcard controls use keyboard-enabled spans to avoid invalid nested buttons. */
+/* eslint-disable react/react-compiler, jsx-a11y/prefer-tag-over-role, next/no-html-link-for-pages -- nested flashcard controls use keyboard-enabled spans; Vinext's Link shim currently duplicates React during hydration. */
 'use client';
 
 import { ChangeEvent, useEffect, useMemo, useRef, useState } from 'react';
@@ -60,6 +60,7 @@ import {
 import {
   answerMatches,
   blankCard,
+  DEMO_STATS,
   DEFAULT_SETTINGS,
   DEFAULT_STATS,
   makeId,
@@ -67,6 +68,7 @@ import {
   masteryName,
   notesToCards,
   parseVocab,
+  STARTER_SETS,
 } from './study-data';
 import type { Delimiter } from './study-data';
 import type {
@@ -3190,11 +3192,27 @@ function formatDuration(seconds: number) {
   return `${Math.floor(minutes / 60)}h ${minutes % 60}m`;
 }
 
-export default function QuizbuddyApp() {
-  const [sets, setSets] = useState<StudySet[]>([]);
-  const [settings, setSettings] = useState<AppSettings>(DEFAULT_SETTINGS);
-  const [stats, setStats] = useState<StudyStats>(DEFAULT_STATS);
-  const [activeSetId, setActiveSetId] = useState('');
+function makeDemoSets() {
+  return STARTER_SETS.map((set) => ({
+    ...set,
+    cards: set.cards.map((card) => ({ ...card })),
+  }));
+}
+
+export default function QuizbuddyApp({ demo = false }: { demo?: boolean }) {
+  const [sets, setSets] = useState<StudySet[]>(() =>
+    demo ? makeDemoSets() : [],
+  );
+  const [settings, setSettings] = useState<AppSettings>(() => ({
+    ...DEFAULT_SETTINGS,
+  }));
+  const [stats, setStats] = useState<StudyStats>(() => ({
+    ...(demo ? DEMO_STATS : DEFAULT_STATS),
+    activity: {},
+  }));
+  const [activeSetId, setActiveSetId] = useState(
+    demo ? (STARTER_SETS[0]?.id ?? '') : '',
+  );
   const [mode, setMode] = useState<Mode>('home');
   const [query, setQuery] = useState('');
   const [coachOpen, setCoachOpen] = useState(false);
@@ -3202,18 +3220,20 @@ export default function QuizbuddyApp() {
   const [systemLight, setSystemLight] = useState(false);
 
   useEffect(() => {
-    try {
-      const stored = window.localStorage.getItem(STORAGE_KEY);
-      if (stored) {
-        const parsed = JSON.parse(stored) as Partial<StoredState>;
-        if (Array.isArray(parsed.sets)) setSets(parsed.sets);
-        if (parsed.settings)
-          setSettings({ ...DEFAULT_SETTINGS, ...parsed.settings });
-        if (parsed.stats) setStats({ ...DEFAULT_STATS, ...parsed.stats });
-        if (typeof parsed.activeSetId === 'string')
-          setActiveSetId(parsed.activeSetId);
-      }
-    } catch {}
+    if (!demo) {
+      try {
+        const stored = window.localStorage.getItem(STORAGE_KEY);
+        if (stored) {
+          const parsed = JSON.parse(stored) as Partial<StoredState>;
+          if (Array.isArray(parsed.sets)) setSets(parsed.sets);
+          if (parsed.settings)
+            setSettings({ ...DEFAULT_SETTINGS, ...parsed.settings });
+          if (parsed.stats) setStats({ ...DEFAULT_STATS, ...parsed.stats });
+          if (typeof parsed.activeSetId === 'string')
+            setActiveSetId(parsed.activeSetId);
+        }
+      } catch {}
+    }
     const media = window.matchMedia('(prefers-color-scheme: light)');
     setSystemLight(media.matches);
     const listen = (event: MediaQueryListEvent) =>
@@ -3221,10 +3241,10 @@ export default function QuizbuddyApp() {
     media.addEventListener('change', listen);
     setHydrated(true);
     return () => media.removeEventListener('change', listen);
-  }, []);
+  }, [demo]);
 
   useEffect(() => {
-    if (!hydrated) return;
+    if (!hydrated || demo) return;
     window.localStorage.setItem(
       STORAGE_KEY,
       JSON.stringify({
@@ -3234,7 +3254,7 @@ export default function QuizbuddyApp() {
         activeSetId,
       } satisfies StoredState),
     );
-  }, [sets, settings, stats, activeSetId, hydrated]);
+  }, [sets, settings, stats, activeSetId, hydrated, demo]);
 
   const light =
     settings.theme === 'light' || (settings.theme === 'system' && systemLight);
@@ -3335,14 +3355,16 @@ export default function QuizbuddyApp() {
   const reset = () => {
     if (
       !window.confirm(
-        'Clear every local set and all progress? Export a backup first if you want to keep your work.',
+        demo
+          ? 'Reset the demo workspace to its original sample data?'
+          : 'Clear every local set and all progress? Export a backup first if you want to keep your work.',
       )
     )
       return;
-    setSets([]);
+    setSets(demo ? makeDemoSets() : []);
     setSettings({ ...DEFAULT_SETTINGS });
-    setStats({ ...DEFAULT_STATS, activity: {} });
-    setActiveSetId('');
+    setStats({ ...(demo ? DEMO_STATS : DEFAULT_STATS), activity: {} });
+    setActiveSetId(demo ? (STARTER_SETS[0]?.id ?? '') : '');
     setMode('home');
   };
 
@@ -3501,7 +3523,28 @@ export default function QuizbuddyApp() {
           setMode={setMode}
           openSet={openSet}
         />
-        <main>{view}</main>
+        <main>
+          {demo && (
+            <div className="border-b border-[#8c7df7]/25 bg-[#8c7df7]/10 px-4 py-3 sm:px-6 lg:px-8">
+              <div className="mx-auto flex max-w-[1240px] flex-wrap items-center gap-2 text-sm">
+                <span className="rounded-full bg-[#8c7df7] px-2.5 py-1 text-xs font-extrabold text-white">
+                  DEMO
+                </span>
+                <span className="font-bold">
+                  Explore Quizbuddy with sample sets. Changes here are
+                  temporary.
+                </span>
+                <a
+                  href="/study"
+                  className="ml-auto inline-flex items-center gap-1 font-extrabold text-[#5b4bd1] hover:underline"
+                >
+                  Open your fresh workspace <ArrowRight className="size-4" />
+                </a>
+              </div>
+            </div>
+          )}
+          {view}
+        </main>
       </div>
       {activeSet && (
         <>

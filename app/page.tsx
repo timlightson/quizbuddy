@@ -1,4 +1,7 @@
 /* eslint-disable next/no-html-link-for-pages -- Vinext's Link shim currently duplicates React during hydration. */
+'use client';
+
+import { useState } from 'react';
 import {
   ArrowRight,
   BookOpenCheck,
@@ -14,6 +17,28 @@ import {
   WandSparkles,
   Zap,
 } from 'lucide-react';
+
+const previewCards = [
+  {
+    term: 'Mitochondria',
+    definition:
+      'The organelle that produces most usable cellular energy through respiration.',
+  },
+  {
+    term: 'Ribosome',
+    definition: 'The structure that assembles amino acids into proteins.',
+  },
+  {
+    term: 'Cell membrane',
+    definition:
+      'A selectively permeable boundary controlling what enters and leaves a cell.',
+  },
+  {
+    term: 'Osmosis',
+    definition:
+      'The diffusion of water across a selectively permeable membrane.',
+  },
+];
 
 const studyModes = [
   {
@@ -57,6 +82,16 @@ function Brand() {
 }
 
 function ProductPreview() {
+  const [cardIndex, setCardIndex] = useState(0);
+  const [flipped, setFlipped] = useState(false);
+  const card = previewCards[cardIndex];
+  const move = (step: number) => {
+    setCardIndex(
+      (current) => (current + step + previewCards.length) % previewCards.length,
+    );
+    setFlipped(false);
+  };
+
   return (
     <div className="relative mx-auto w-full max-w-[610px]">
       <div className="absolute -inset-10 rounded-full bg-[#6ce5d1]/10 blur-[90px]" />
@@ -97,26 +132,60 @@ function ProductPreview() {
                 </div>
               ))}
             </div>
-            <div className="mt-2.5 flex min-h-[260px] flex-col items-center justify-center rounded-2xl border border-[#363d49] bg-[#252a35] p-8 text-center">
+            <button
+              type="button"
+              onClick={() => setFlipped((value) => !value)}
+              aria-label={`${flipped ? 'Show term for' : 'Show definition for'} ${card.term}`}
+              className="group mt-2.5 flex min-h-[260px] w-full flex-col items-center justify-center rounded-2xl border border-[#363d49] bg-[#252a35] p-8 text-center transition hover:-translate-y-0.5 hover:border-[#6ce5d1]/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6ce5d1]"
+            >
               <span className="rounded-lg bg-[#343a47] px-2.5 py-1 text-[9px] font-extrabold uppercase tracking-[.13em] text-[#aeb5c2]">
-                Term
+                {flipped ? 'Definition' : 'Term'}
               </span>
-              <p className="mt-8 text-[clamp(1.75rem,5vw,3.2rem)] font-extrabold tracking-[-.055em] text-white">
-                Mitochondria
+              <p
+                key={`${cardIndex}-${flipped ? 'back' : 'front'}`}
+                className={`rise mt-8 font-extrabold leading-tight text-white ${flipped ? 'text-[clamp(1.2rem,3vw,1.8rem)] tracking-[-.03em]' : 'text-[clamp(1.75rem,5vw,3.2rem)] tracking-[-.055em]'}`}
+              >
+                {flipped ? card.definition : card.term}
               </p>
-              <p className="mt-4 text-xs text-[#78808e]">Click to flip</p>
-            </div>
+              <p className="mt-4 text-xs text-[#8b94a3] transition group-hover:text-[#c8ced8]">
+                {flipped ? 'Click to see the term' : 'Click to flip'}
+              </p>
+            </button>
             <div className="mt-3 flex items-center justify-center gap-3 text-xs font-bold text-[#9299a8]">
-              <span className="grid size-8 place-items-center rounded-full bg-[#242933]">
+              <button
+                type="button"
+                onClick={() => move(-1)}
+                aria-label="Previous demo card"
+                className="grid size-8 place-items-center rounded-full bg-[#242933] transition hover:bg-[#303642] hover:text-white"
+              >
                 ←
+              </button>
+              <span aria-live="polite">
+                {cardIndex + 1} / {previewCards.length}
               </span>
-              1 / 18
-              <span className="grid size-8 place-items-center rounded-full bg-[#6ce5d1] text-[#071612]">
+              <button
+                type="button"
+                onClick={() => move(1)}
+                aria-label="Next demo card"
+                className="grid size-8 place-items-center rounded-full bg-[#6ce5d1] text-[#071612] transition hover:bg-[#8aedde]"
+              >
                 →
-              </span>
+              </button>
             </div>
           </div>
         </div>
+      </div>
+      <div className="relative mt-5 text-center">
+        <a
+          href="/demo"
+          className="inline-flex h-12 items-center gap-2 rounded-xl border border-[#454c5a] bg-[#171b22] px-5 text-sm font-extrabold text-white transition hover:-translate-y-0.5 hover:border-[#6ce5d1]/70 hover:bg-[#1e242c]"
+        >
+          <Play className="size-4 fill-current" /> Explore the full demo
+          <ArrowRight className="size-4" />
+        </a>
+        <p className="mt-2 text-xs font-semibold text-[#697280]">
+          Sample workspace · no signup · your real library stays untouched
+        </p>
       </div>
     </div>
   );

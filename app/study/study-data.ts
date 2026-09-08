@@ -20,6 +20,15 @@ export const DEFAULT_STATS: StudyStats = {
   activity: {},
 };
 
+export const DEMO_STATS: StudyStats = {
+  reviews: 42,
+  correct: 34,
+  seconds: 3120,
+  streak: 4,
+  xp: 286,
+  activity: {},
+};
+
 const now = Date.now();
 
 function cards(
