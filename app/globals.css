@@ -47,6 +47,7 @@
 }
 
 :root {
+  color-scheme: dark;
   --background: #090b10;
   --foreground: #f6f7fb;
   --card: #15181f;
@@ -79,9 +80,36 @@
   --sidebar-accent-foreground: #ffffff;
   --sidebar-border: #24272e;
   --sidebar-ring: #6ce5d1;
+  --qb-sidebar: #0f1218;
+  --qb-sidebar-border: #222630;
+  --qb-sidebar-text: #f6f7fb;
+  --qb-sidebar-muted: #8d95a4;
+  --qb-sidebar-subtle: #606875;
+  --qb-sidebar-hover: #1d2129;
+  --qb-sidebar-active: #292e38;
+  --qb-sidebar-card: #181c23;
+  --qb-field: #151922;
+  --qb-field-strong: #101319;
+  --qb-field-border: #353b47;
+  --qb-mobile: #11151c;
+  --qb-selected: #173b38;
+  --qb-selected-foreground: #c8fff6;
+  --qb-soft-purple: #1b1930;
+  --qb-teal-text: #6ce5d1;
+  --qb-purple-surface: #302958;
+  --qb-purple-text: #b7adff;
+  --qb-blue-surface: #1c3150;
+  --qb-blue-text: #80a8ff;
+  --qb-pink-surface: #3f2b43;
+  --qb-pink-text: #f49ac2;
+  --qb-gold-surface: #49351d;
+  --qb-gold-text: #ffc764;
+  --qb-danger-surface: #351d24;
+  --qb-danger-text: #ff9bad;
 }
 
 .light {
+  color-scheme: light;
   --background: #f6f8fb;
   --foreground: #161b26;
   --card: #ffffff;
@@ -100,6 +128,40 @@
   --border: #e0e4eb;
   --input: #d6dbe4;
   --ring: #1db9a6;
+  --sidebar: #ffffff;
+  --sidebar-foreground: #161b26;
+  --sidebar-primary: #1db9a6;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #e8f5f2;
+  --sidebar-accent-foreground: #161b26;
+  --sidebar-border: #e0e4eb;
+  --sidebar-ring: #1db9a6;
+  --qb-sidebar: #ffffff;
+  --qb-sidebar-border: #e0e4eb;
+  --qb-sidebar-text: #161b26;
+  --qb-sidebar-muted: #687182;
+  --qb-sidebar-subtle: #8b94a3;
+  --qb-sidebar-hover: #f1f4f8;
+  --qb-sidebar-active: #e8f5f2;
+  --qb-sidebar-card: #f3f6f8;
+  --qb-field: #ffffff;
+  --qb-field-strong: #ffffff;
+  --qb-field-border: #d9dee7;
+  --qb-mobile: #ffffff;
+  --qb-selected: #dff7f2;
+  --qb-selected-foreground: #115f55;
+  --qb-soft-purple: #f1efff;
+  --qb-teal-text: #11796d;
+  --qb-purple-surface: #efecff;
+  --qb-purple-text: #5949c6;
+  --qb-blue-surface: #e8f1ff;
+  --qb-blue-text: #2f68bd;
+  --qb-pink-surface: #fff0f7;
+  --qb-pink-text: #b93874;
+  --qb-gold-surface: #fff5df;
+  --qb-gold-text: #8a5a00;
+  --qb-danger-surface: #fff0f2;
+  --qb-danger-text: #be3049;
 }
 
 @layer base {
@@ -141,7 +203,7 @@
 }
 
 html {
-  background: #090b10;
+  background: var(--background);
 }
 body {
   min-height: 100vh;

@@ -67,7 +67,6 @@ import {
   masteryName,
   notesToCards,
   parseVocab,
-  STARTER_SETS,
 } from './study-data';
 import type { Delimiter } from './study-data';
 import type {
@@ -80,7 +79,7 @@ import type {
 } from './types';
 import { extractFileText } from './file-reader';
 
-const STORAGE_KEY = 'quizbuddy-v3';
+const STORAGE_KEY = 'quizbuddy-v4';
 const SET_COLORS = [
   'from-[#6d5dfc] via-[#3976d9] to-[#1ab8a3]',
   'from-[#ec4899] via-[#f97370] to-[#f6b73c]',
@@ -100,10 +99,10 @@ function Logo({ compact = false }: { compact?: boolean }) {
     <div className="flex items-center gap-2.5">
       <div className="relative grid size-9 place-items-center rounded-xl bg-[#6ce5d1] text-[#081713] shadow-[0_0_0_4px_rgba(108,229,209,.08)]">
         <BrainCircuit className="size-5" strokeWidth={2.4} />
-        <span className="absolute -right-0.5 -top-0.5 size-2 rounded-full border-2 border-[#101217] bg-[#8c7df7]" />
+        <span className="absolute -right-0.5 -top-0.5 size-2 rounded-full border-2 border-[var(--qb-sidebar)] bg-[#8c7df7]" />
       </div>
       {!compact && (
-        <span className="text-xl font-extrabold tracking-[-.055em] text-white">
+        <span className="text-xl font-extrabold tracking-[-.055em] text-[var(--qb-sidebar-text)]">
           quizbuddy
         </span>
       )}
@@ -143,7 +142,7 @@ function Sidebar({
     'meteor',
   ];
   return (
-    <aside className="fixed inset-y-0 left-0 z-30 hidden w-[260px] flex-col border-r border-[#222630] bg-[#0f1218] px-3.5 py-5 lg:flex">
+    <aside className="fixed inset-y-0 left-0 z-30 hidden w-[260px] flex-col border-r border-[var(--qb-sidebar-border)] bg-[var(--qb-sidebar)] px-3.5 py-5 lg:flex">
       <div className="px-2">
         <Logo />
       </div>
@@ -158,7 +157,7 @@ function Sidebar({
           <button
             key={id}
             onClick={() => setMode(id)}
-            className={`flex h-10 w-full items-center gap-3 rounded-xl px-3 text-sm font-bold transition ${mode === id ? 'bg-[#292e38] text-white' : 'text-[#8d95a4] hover:bg-[#1d2129] hover:text-white'}`}
+            className={`flex h-10 w-full items-center gap-3 rounded-xl px-3 text-sm font-bold transition ${mode === id ? 'bg-[var(--qb-sidebar-active)] text-[var(--qb-sidebar-text)]' : 'text-[var(--qb-sidebar-muted)] hover:bg-[var(--qb-sidebar-hover)] hover:text-[var(--qb-sidebar-text)]'}`}
           >
             <Icon className="size-[18px]" />
             {label}
@@ -171,13 +170,13 @@ function Sidebar({
         ))}
       </div>
       <div className="mt-7 flex items-center justify-between px-3">
-        <span className="text-[.7rem] font-extrabold uppercase tracking-[.14em] text-[#606875]">
+        <span className="text-[.7rem] font-extrabold uppercase tracking-[.14em] text-[var(--qb-sidebar-subtle)]">
           Your sets
         </span>
         <button
           aria-label="Create set"
           onClick={() => setMode('studio')}
-          className="text-[#77808e] hover:text-white"
+          className="text-[var(--qb-sidebar-muted)] hover:text-[var(--qb-sidebar-text)]"
         >
           <Plus className="size-4" />
         </button>
@@ -187,7 +186,7 @@ function Sidebar({
           <button
             key={set.id}
             onClick={() => openSet(set.id)}
-            className={`flex h-10 w-full items-center gap-3 rounded-xl px-3 text-left text-sm font-semibold transition ${activeSetId === set.id && setModes.includes(mode) ? 'bg-[#242933] text-white' : 'text-[#8992a1] hover:bg-[#1b1f26] hover:text-white'}`}
+            className={`flex h-10 w-full items-center gap-3 rounded-xl px-3 text-left text-sm font-semibold transition ${activeSetId === set.id && setModes.includes(mode) ? 'bg-[var(--qb-sidebar-active)] text-[var(--qb-sidebar-text)]' : 'text-[var(--qb-sidebar-muted)] hover:bg-[var(--qb-sidebar-hover)] hover:text-[var(--qb-sidebar-text)]'}`}
           >
             <span
               className="size-2 shrink-0 rounded-full"
@@ -198,16 +197,16 @@ function Sidebar({
               }}
             />
             <span className="truncate">{set.title}</span>
-            <span className="ml-auto text-[10px] text-[#626b78]">
+            <span className="ml-auto text-[10px] text-[var(--qb-sidebar-subtle)]">
               {set.cards.length}
             </span>
           </button>
         ))}
       </div>
-      <div className="mt-auto space-y-1 border-t border-[#242832] pt-4">
+      <div className="mt-auto space-y-1 border-t border-[var(--qb-sidebar-border)] pt-4">
         <button
           onClick={() => setMode('settings')}
-          className={`flex h-10 w-full items-center gap-3 rounded-xl px-3 text-sm font-semibold ${mode === 'settings' ? 'bg-[#292e38] text-white' : 'text-[#8d95a4] hover:text-white'}`}
+          className={`flex h-10 w-full items-center gap-3 rounded-xl px-3 text-sm font-semibold ${mode === 'settings' ? 'bg-[var(--qb-sidebar-active)] text-[var(--qb-sidebar-text)]' : 'text-[var(--qb-sidebar-muted)] hover:text-[var(--qb-sidebar-text)]'}`}
         >
           <Settings className="size-[18px]" /> Settings
         </button>
@@ -219,15 +218,15 @@ function Sidebar({
               'noopener,noreferrer',
             )
           }
-          className="flex h-10 w-full items-center gap-3 rounded-xl px-3 text-sm font-semibold text-[#8d95a4] hover:text-white"
+          className="flex h-10 w-full items-center gap-3 rounded-xl px-3 text-sm font-semibold text-[var(--qb-sidebar-muted)] hover:text-[var(--qb-sidebar-text)]"
         >
           <CircleHelp className="size-[18px]" /> Help & shortcuts
         </button>
-        <div className="mt-2 rounded-xl bg-[#181c23] px-3 py-2.5">
-          <p className="text-xs font-bold text-[#6ce5d1]">
+        <div className="mt-2 rounded-xl bg-[var(--qb-sidebar-card)] px-3 py-2.5">
+          <p className="text-xs font-bold text-[var(--qb-teal-text)]">
             Everything unlocked
           </p>
-          <p className="mt-0.5 text-[11px] text-[#6f7886]">
+          <p className="mt-0.5 text-[11px] text-[var(--qb-sidebar-muted)]">
             No ads. No card limits.
           </p>
         </div>
@@ -274,7 +273,7 @@ function Topbar({
           onChange={(event) => setQuery(event.target.value)}
           aria-label="Search sets and cards"
           placeholder="Search sets and cards…"
-          className="h-11 w-full rounded-xl border border-border bg-[#151922] pl-10 pr-4 text-sm text-foreground outline-none transition focus:border-[#6ce5d1]/70 focus:ring-4 focus:ring-[#6ce5d1]/10"
+          className="h-11 w-full rounded-xl border border-border bg-[var(--qb-field)] pl-10 pr-4 text-sm text-foreground outline-none transition focus:border-[#6ce5d1]/70 focus:ring-4 focus:ring-[#6ce5d1]/10"
         />
         {results.length > 0 && (
           <div className="absolute inset-x-0 top-12 rounded-xl border border-border bg-popover p-2 shadow-2xl">
@@ -287,7 +286,7 @@ function Topbar({
                 }}
                 className="flex w-full items-center gap-3 rounded-lg p-3 text-left hover:bg-muted"
               >
-                <Layers3 className="size-4 text-[#6ce5d1]" />
+                <Layers3 className="size-4 text-[var(--qb-teal-text)]" />
                 <span className="text-sm font-bold">{set.title}</span>
                 <span className="ml-auto text-xs text-muted-foreground">
                   {set.cards.length}
@@ -424,7 +423,7 @@ function HomeView({
       copy: 'Paste term + definition lists, spreadsheets, CSV, TSV, or JSON.',
       action: 'Import',
       icon: FileSpreadsheet,
-      tone: 'bg-[#173b38] text-[#6ce5d1]',
+      tone: 'bg-[var(--qb-selected)] text-[var(--qb-teal-text)]',
       mode: 'studio' as Mode,
     },
     {
@@ -432,7 +431,7 @@ function HomeView({
       copy: 'Turn notes into cards, a guide, essay prompts, and test material.',
       action: 'Build pack',
       icon: WandSparkles,
-      tone: 'bg-[#302958] text-[#b7adff]',
+      tone: 'bg-[var(--qb-purple-surface)] text-[var(--qb-purple-text)]',
       mode: 'studio' as Mode,
     },
     {
@@ -440,7 +439,7 @@ function HomeView({
       copy: 'Create and edit as many cards as you need, with no cap.',
       action: 'Create',
       icon: PencilLine,
-      tone: 'bg-[#3f2b43] text-[#f49ac2]',
+      tone: 'bg-[var(--qb-pink-surface)] text-[var(--qb-pink-text)]',
       mode: 'studio' as Mode,
     },
     {
@@ -448,7 +447,7 @@ function HomeView({
       copy: 'Mix multiple choice, true/false, and written responses.',
       action: 'Start',
       icon: ListChecks,
-      tone: 'bg-[#1c3150] text-[#80a8ff]',
+      tone: 'bg-[var(--qb-blue-surface)] text-[var(--qb-blue-text)]',
       mode: 'test' as Mode,
     },
     {
@@ -456,7 +455,7 @@ function HomeView({
       copy: 'Match, Meteor, or Quiz Rush—all count toward mastery.',
       action: 'Play',
       icon: Gamepad2,
-      tone: 'bg-[#49351d] text-[#ffc764]',
+      tone: 'bg-[var(--qb-gold-surface)] text-[var(--qb-gold-text)]',
       mode: 'rush' as Mode,
     },
   ];
@@ -464,7 +463,9 @@ function HomeView({
     <div className="mx-auto max-w-[1240px] p-4 pb-28 sm:p-7 lg:p-9">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <p className="text-sm font-bold text-[#6ce5d1]">Your study space</p>
+          <p className="text-sm font-bold text-[var(--qb-teal-text)]">
+            Your study space
+          </p>
           <h1 className="mt-1 text-[clamp(2rem,5vw,3.6rem)] font-extrabold tracking-[-.065em]">
             Ready when you are.
           </h1>
@@ -525,7 +526,7 @@ function HomeView({
       <section className="mt-10">
         <div className="mb-4 flex items-center justify-between">
           <div>
-            <p className="text-xs font-extrabold uppercase tracking-[.16em] text-[#6ce5d1]">
+            <p className="text-xs font-extrabold uppercase tracking-[.16em] text-[var(--qb-teal-text)]">
               Ready for review
             </p>
             <h2 className="mt-1 text-2xl font-extrabold tracking-[-.045em]">
@@ -534,16 +535,35 @@ function HomeView({
           </div>
           <button
             onClick={() => setMode('library')}
-            className="text-sm font-extrabold text-[#6ce5d1]"
+            className="text-sm font-extrabold text-[var(--qb-teal-text)]"
           >
             View all
           </button>
         </div>
-        <div className="grid gap-3 md:grid-cols-2">
-          {sets.slice(0, 4).map((set) => (
-            <SetRow key={set.id} set={set} onClick={() => openSet(set.id)} />
-          ))}
-        </div>
+        {sets.length ? (
+          <div className="grid gap-3 md:grid-cols-2">
+            {sets.slice(0, 4).map((set) => (
+              <SetRow key={set.id} set={set} onClick={() => openSet(set.id)} />
+            ))}
+          </div>
+        ) : (
+          <div className="rounded-[24px] border border-dashed border-border bg-card px-6 py-10 text-center">
+            <Layers3 className="mx-auto size-9 text-muted-foreground" />
+            <h3 className="mt-4 text-xl font-extrabold">
+              Start with your own material
+            </h3>
+            <p className="mx-auto mt-2 max-w-lg text-sm leading-6 text-muted-foreground">
+              Import an existing vocabulary list, upload class notes, or build
+              your first set from scratch. Your library starts completely empty.
+            </p>
+            <Button
+              onClick={() => setMode('studio')}
+              className="mt-5 bg-[#6ce5d1] font-extrabold text-[#071612] hover:bg-[#88eddd]"
+            >
+              <Sparkles /> Open Study Studio
+            </Button>
+          </div>
+        )}
       </section>
     </div>
   );
@@ -567,7 +587,7 @@ function Field({
         value={value}
         onChange={(event) => onChange(event.target.value)}
         placeholder={placeholder}
-        className="mt-2 h-12 w-full rounded-xl border border-border bg-[#11141a] px-4 text-foreground outline-none focus:border-[#6ce5d1]"
+        className="mt-2 h-12 w-full rounded-xl border border-border bg-[var(--qb-field)] px-4 text-foreground outline-none focus:border-[#6ce5d1]"
       />
     </label>
   );
@@ -682,7 +702,7 @@ function StudioView({ onCreate }: { onCreate: (set: StudySet) => void }) {
   return (
     <div className="mx-auto max-w-[1160px] p-4 pb-28 sm:p-7 lg:p-9">
       <div>
-        <p className="text-xs font-extrabold uppercase tracking-[.16em] text-[#6ce5d1]">
+        <p className="text-xs font-extrabold uppercase tracking-[.16em] text-[var(--qb-teal-text)]">
           Quizbuddy Studio
         </p>
         <h1 className="mt-2 text-[clamp(2rem,5vw,3.5rem)] font-extrabold tracking-[-.06em]">
@@ -702,7 +722,7 @@ function StudioView({ onCreate }: { onCreate: (set: StudySet) => void }) {
               setMethod(id);
               setError('');
             }}
-            className={`rounded-2xl border p-4 text-left transition ${method === id ? 'border-[#6ce5d1] bg-[#173b38]' : 'border-border bg-card hover:border-[#4b5361]'}`}
+            className={`rounded-2xl border p-4 text-left transition ${method === id ? 'border-[#6ce5d1] bg-[var(--qb-selected)] text-[var(--qb-selected-foreground)]' : 'border-border bg-card hover:border-[#4b5361]'}`}
           >
             <div className="flex items-center gap-3">
               <span
@@ -771,7 +791,7 @@ function StudioView({ onCreate }: { onCreate: (set: StudySet) => void }) {
                 placeholder={
                   'Mitochondria\tProduces usable energy\nRibosome\tBuilds proteins\nOsmosis\tMovement of water across a membrane'
                 }
-                className="mt-4 min-h-80 w-full resize-y rounded-2xl border border-[#353b47] bg-[#101319] p-5 font-mono text-sm leading-7 text-foreground outline-none focus:border-[#6ce5d1]"
+                className="mt-4 min-h-80 w-full resize-y rounded-2xl border border-[var(--qb-field-border)] bg-[var(--qb-field-strong)] p-5 font-mono text-sm leading-7 text-foreground outline-none focus:border-[#6ce5d1]"
               />
             </div>
           )}
@@ -787,7 +807,7 @@ function StudioView({ onCreate }: { onCreate: (set: StudySet) => void }) {
                 value={text}
                 onChange={(event) => setText(event.target.value)}
                 placeholder="Paste notes here. Headings, bullets, definitions, and full paragraphs all work…"
-                className="mt-4 min-h-96 w-full resize-y rounded-2xl border border-[#353b47] bg-[#101319] p-5 text-sm leading-7 text-foreground outline-none focus:border-[#6ce5d1]"
+                className="mt-4 min-h-96 w-full resize-y rounded-2xl border border-[var(--qb-field-border)] bg-[var(--qb-field-strong)] p-5 text-sm leading-7 text-foreground outline-none focus:border-[#6ce5d1]"
               />
             </div>
           )}
@@ -795,9 +815,9 @@ function StudioView({ onCreate }: { onCreate: (set: StudySet) => void }) {
             <div className="mt-6">
               <label
                 htmlFor="studio-upload"
-                className="flex min-h-80 cursor-pointer flex-col items-center justify-center rounded-2xl border border-dashed border-[#414956] bg-[#101319] p-8 text-center transition hover:border-[#6ce5d1]"
+                className="flex min-h-80 cursor-pointer flex-col items-center justify-center rounded-2xl border border-dashed border-[var(--qb-field-border)] bg-[var(--qb-field-strong)] p-8 text-center transition hover:border-[#6ce5d1]"
               >
-                <span className="grid size-14 place-items-center rounded-2xl bg-[#173b38] text-[#6ce5d1]">
+                <span className="grid size-14 place-items-center rounded-2xl bg-[var(--qb-selected)] text-[var(--qb-teal-text)]">
                   <Upload className="size-6" />
                 </span>
                 <h2 className="mt-5 font-extrabold">
@@ -847,7 +867,7 @@ function StudioView({ onCreate }: { onCreate: (set: StudySet) => void }) {
                 {manual.map((card, index) => (
                   <div
                     key={card.id}
-                    className="grid gap-3 rounded-2xl border border-border bg-[#11141a] p-4 sm:grid-cols-[36px_1fr_1fr_40px] sm:items-center"
+                    className="grid gap-3 rounded-2xl border border-border bg-[var(--qb-field)] p-4 sm:grid-cols-[36px_1fr_1fr_40px] sm:items-center"
                   >
                     <span className="text-center text-xs font-extrabold text-muted-foreground">
                       {index + 1}
@@ -900,7 +920,7 @@ function StudioView({ onCreate }: { onCreate: (set: StudySet) => void }) {
             </div>
           )}
           {error && (
-            <div className="mt-5 rounded-xl border border-[#713844] bg-[#351d24] p-4 text-sm font-semibold text-[#ff9bad]">
+            <div className="mt-5 rounded-xl border border-[var(--qb-danger-text)]/40 bg-[var(--qb-danger-surface)] p-4 text-sm font-semibold text-[var(--qb-danger-text)]">
               {error}
             </div>
           )}
@@ -908,7 +928,7 @@ function StudioView({ onCreate }: { onCreate: (set: StudySet) => void }) {
         <aside className="h-fit rounded-[24px] border border-border bg-card p-5 lg:sticky lg:top-24">
           <div className="flex items-center justify-between">
             <h2 className="font-extrabold">Live preview</h2>
-            <span className="rounded-full bg-[#173b38] px-2.5 py-1 text-xs font-extrabold text-[#6ce5d1]">
+            <span className="rounded-full bg-[var(--qb-selected)] px-2.5 py-1 text-xs font-extrabold text-[var(--qb-teal-text)]">
               {parsed.length} cards
             </span>
           </div>
@@ -917,7 +937,7 @@ function StudioView({ onCreate }: { onCreate: (set: StudySet) => void }) {
               parsed.map((card, index) => (
                 <div
                   key={`${card.id}-${index}`}
-                  className="rounded-xl border border-border bg-[#11141a] p-3"
+                  className="rounded-xl border border-border bg-[var(--qb-field)] p-3"
                 >
                   <p className="truncate text-sm font-extrabold">{card.term}</p>
                   <p className="mt-1 line-clamp-2 text-xs leading-5 text-muted-foreground">
@@ -934,15 +954,16 @@ function StudioView({ onCreate }: { onCreate: (set: StudySet) => void }) {
           </div>
           <div className="mt-5 space-y-2 text-xs text-muted-foreground">
             <p className="flex items-center gap-2">
-              <Check className="size-4 text-[#6ce5d1]" /> No artificial card
-              limit
+              <Check className="size-4 text-[var(--qb-teal-text)]" /> No
+              artificial card limit
             </p>
             <p className="flex items-center gap-2">
-              <Check className="size-4 text-[#6ce5d1]" /> Fully editable after
-              import
+              <Check className="size-4 text-[var(--qb-teal-text)]" /> Fully
+              editable after import
             </p>
             <p className="flex items-center gap-2">
-              <Check className="size-4 text-[#6ce5d1]" /> Stored on this device
+              <Check className="size-4 text-[var(--qb-teal-text)]" /> Stored on
+              this device
             </p>
           </div>
           <Button
@@ -1006,7 +1027,7 @@ function EditorView({
           <ArrowLeft />
         </Button>
         <div>
-          <p className="text-xs font-extrabold uppercase tracking-[.14em] text-[#6ce5d1]">
+          <p className="text-xs font-extrabold uppercase tracking-[.14em] text-[var(--qb-teal-text)]">
             Set editor
           </p>
           <h1 className="text-3xl font-extrabold tracking-[-.05em]">
@@ -1092,7 +1113,7 @@ function EditorView({
         </div>
       </section>
       {showImport && (
-        <section className="mt-4 rounded-[24px] border border-[#4a437c] bg-[#1b1930] p-5">
+        <section className="mt-4 rounded-[24px] border border-[#8c7df7]/50 bg-[var(--qb-soft-purple)] p-5">
           <div className="flex items-center justify-between">
             <div>
               <h2 className="font-extrabold">Bulk import</h2>
@@ -1445,7 +1466,7 @@ function SetView({
               <button
                 key={item}
                 onClick={() => setFilter(item)}
-                className={`rounded-full border px-4 py-2 text-xs font-extrabold capitalize ${filter === item ? 'border-white bg-white text-[#11151d]' : 'border-border bg-card text-muted-foreground'}`}
+                className={`rounded-full border px-4 py-2 text-xs font-extrabold capitalize ${filter === item ? 'border-foreground bg-foreground text-background' : 'border-border bg-card text-muted-foreground'}`}
               >
                 {item}
               </button>
@@ -1631,7 +1652,7 @@ function FlashcardsView({
       </div>
       <button
         onClick={() => setFlipped(!flipped)}
-        className="relative flex min-h-[430px] w-full items-center justify-center rounded-[28px] border border-[#3a414d] bg-card p-10 text-center shadow-[0_28px_80px_rgba(0,0,0,.24)]"
+        className="relative flex min-h-[430px] w-full items-center justify-center rounded-[28px] border border-border bg-card p-10 text-center shadow-[0_28px_80px_rgba(0,0,0,.18)]"
       >
         <span className="absolute left-6 top-5 text-xs font-extrabold uppercase tracking-[.14em] text-muted-foreground">
           {flipped ? 'Answer' : 'Prompt'}
@@ -1777,7 +1798,7 @@ function LearnView({
       </div>
       <section className="rounded-[26px] border border-border bg-card p-6 sm:p-9">
         <div className="flex items-center justify-between">
-          <span className="rounded-lg bg-[#302958] px-2.5 py-1 text-xs font-extrabold text-[#b7adff]">
+          <span className="rounded-lg bg-[var(--qb-purple-surface)] px-2.5 py-1 text-xs font-extrabold text-[var(--qb-purple-text)]">
             ADAPTIVE ROUND
           </span>
           <button
@@ -1796,9 +1817,9 @@ function LearnView({
           const correct = option === card.definition;
           const state = selected
             ? correct
-              ? 'border-[#6ce5d1] bg-[#173b38] text-[#6ce5d1]'
+              ? 'border-[#6ce5d1] bg-[var(--qb-selected)] text-[var(--qb-teal-text)]'
               : selected === option
-                ? 'border-[#ff7b72] bg-[#351d24] text-[#ff9bad]'
+                ? 'border-[#ff7b72] bg-[var(--qb-danger-surface)] text-[var(--qb-danger-text)]'
                 : 'border-border bg-card opacity-55'
             : 'border-border bg-card hover:border-[#6ce5d1]';
           return (
@@ -1891,7 +1912,7 @@ function WriteView({
         />
         {checked && (
           <div
-            className={`mt-4 rounded-xl p-4 text-sm font-bold ${correct ? 'bg-[#173b38] text-[#6ce5d1]' : 'bg-[#351d24] text-[#ff9bad]'}`}
+            className={`mt-4 rounded-xl p-4 text-sm font-bold ${correct ? 'bg-[var(--qb-selected)] text-[var(--qb-teal-text)]' : 'bg-[var(--qb-danger-surface)] text-[var(--qb-danger-text)]'}`}
           >
             {correct ? (
               'Correct — nice recall.'
@@ -2045,7 +2066,7 @@ function TestView({
               <button
                 key={choice}
                 onClick={() => setAnswers({ ...answers, [card.id]: choice })}
-                className={`rounded-xl border-2 p-4 text-left text-sm font-semibold ${answers[card.id] === choice ? 'border-[#80a8ff] bg-[#1c3150]' : 'border-border bg-background'}`}
+                className={`rounded-xl border-2 p-4 text-left text-sm font-semibold ${answers[card.id] === choice ? 'border-[#80a8ff] bg-[#80a8ff]/15' : 'border-border bg-background'}`}
               >
                 {choice}
               </button>
@@ -2181,7 +2202,7 @@ function MatchView({
             <button
               key={entry.id}
               onClick={() => pick(entry)}
-              className={`min-h-28 rounded-2xl border-2 p-5 text-left text-sm font-semibold leading-6 transition ${done.includes(entry.id) ? 'scale-95 border-[#6ce5d1] bg-[#173b38] opacity-25' : selected?.id === entry.id ? 'border-[#ffc764] bg-[#49351d]' : 'border-border bg-card hover:border-[#596171]'}`}
+              className={`min-h-28 rounded-2xl border-2 p-5 text-left text-sm font-semibold leading-6 transition ${done.includes(entry.id) ? 'scale-95 border-[#6ce5d1] bg-[#6ce5d1]/15 opacity-25' : selected?.id === entry.id ? 'border-[#ffc764] bg-[#ffc764]/15' : 'border-border bg-card hover:border-[#596171]'}`}
             >
               {entry.text}
             </button>
@@ -2327,7 +2348,7 @@ function GuideView({ set, onExit }: { set: StudySet; onExit: () => void }) {
       </div>
       <section className="mt-7 rounded-[24px] border border-border bg-card p-6">
         <div className="flex items-center gap-3">
-          <span className="grid size-10 place-items-center rounded-xl bg-[#173b38] text-[#6ce5d1]">
+          <span className="grid size-10 place-items-center rounded-xl bg-[var(--qb-selected)] text-[var(--qb-teal-text)]">
             <Lightbulb />
           </span>
           <h2 className="text-xl font-extrabold">Quick summary</h2>
@@ -2359,7 +2380,9 @@ function GuideView({ set, onExit }: { set: StudySet; onExit: () => void }) {
               key={card.id}
               className="rounded-xl border border-border bg-background p-4"
             >
-              <p className="font-extrabold text-[#6ce5d1]">{card.term}</p>
+              <p className="font-extrabold text-[var(--qb-teal-text)]">
+                {card.term}
+              </p>
               <p className="mt-2 text-sm leading-6 text-muted-foreground">
                 {card.definition}
               </p>
@@ -2403,7 +2426,7 @@ function LibraryView({
     <div className="mx-auto max-w-[1180px] p-4 pb-28 sm:p-8">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <p className="text-xs font-extrabold uppercase tracking-[.16em] text-[#6ce5d1]">
+          <p className="text-xs font-extrabold uppercase tracking-[.16em] text-[var(--qb-teal-text)]">
             Your library
           </p>
           <h1 className="mt-2 text-[clamp(2rem,5vw,3.5rem)] font-extrabold tracking-[-.06em]">
@@ -2534,7 +2557,7 @@ function ProgressView({
     .sort((a, b) => b.count - a.count)[0];
   return (
     <div className="mx-auto max-w-[1180px] p-4 pb-28 sm:p-8">
-      <p className="text-xs font-extrabold uppercase tracking-[.16em] text-[#6ce5d1]">
+      <p className="text-xs font-extrabold uppercase tracking-[.16em] text-[var(--qb-teal-text)]">
         Learning analytics
       </p>
       <h1 className="mt-2 text-[clamp(2rem,5vw,3.5rem)] font-extrabold tracking-[-.06em]">
@@ -2583,12 +2606,20 @@ function ProgressView({
         </div>
         <div className="mt-6 grid grid-flow-col grid-rows-7 gap-1.5 overflow-x-auto pb-2">
           {Array.from({ length: 154 }, (_, index) => {
+            const date = new Date();
+            date.setDate(date.getDate() - (153 - index));
+            const dateKey = date.toISOString().slice(0, 10);
+            const reviews = stats.activity[dateKey] ?? 0;
             const value =
-              index > 132
-                ? (index * 7 + stats.reviews) % 5
-                : (index + stats.streak) % 19 === 0
+              reviews === 0
+                ? 0
+                : reviews < 3
                   ? 1
-                  : 0;
+                  : reviews < 6
+                    ? 2
+                    : reviews < 10
+                      ? 3
+                      : 4;
             const colors = [
               'bg-muted',
               'bg-[#284d49]',
@@ -2599,7 +2630,7 @@ function ProgressView({
             return (
               <span
                 key={index}
-                title={`${value * 3} reviews`}
+                title={`${reviews} ${reviews === 1 ? 'review' : 'reviews'} on ${dateKey}`}
                 className={`size-3 rounded-[3px] ${colors[value]}`}
               />
             );
@@ -2639,7 +2670,7 @@ function ProgressView({
           </div>
         </section>
         <section className="rounded-[24px] border border-border bg-card p-6">
-          <span className="grid size-11 place-items-center rounded-xl bg-[#302958] text-[#b7adff]">
+          <span className="grid size-11 place-items-center rounded-xl bg-[var(--qb-purple-surface)] text-[var(--qb-purple-text)]">
             <Target />
           </span>
           <h2 className="mt-5 text-xl font-extrabold">Best next move</h2>
@@ -2789,7 +2820,7 @@ function SettingsView({
   return (
     <div className="mx-auto max-w-4xl space-y-7 p-4 pb-28 sm:p-8">
       <div>
-        <p className="text-xs font-extrabold uppercase tracking-[.16em] text-[#6ce5d1]">
+        <p className="text-xs font-extrabold uppercase tracking-[.16em] text-[var(--qb-teal-text)]">
           Preferences
         </p>
         <h1 className="mt-2 text-[clamp(2rem,5vw,3.5rem)] font-extrabold tracking-[-.06em]">
@@ -2939,7 +2970,7 @@ function SettingsView({
         </SettingRow>
         <SettingRow
           title="Start over"
-          copy="Reset all sets and progress to the starter library."
+          copy="Delete every local set, all progress, and restore default preferences."
         >
           <Button
             variant="outline"
@@ -3026,9 +3057,9 @@ function StudyCoach({
   };
   return (
     <Sheet open={open} onOpenChange={setOpen}>
-      <SheetContent className="flex w-full flex-col border-border bg-[#101319] sm:max-w-md">
+      <SheetContent className="flex w-full flex-col border-border bg-[var(--qb-field-strong)] sm:max-w-md">
         <SheetHeader>
-          <div className="mb-2 grid size-11 place-items-center rounded-2xl bg-[#302958] text-[#b7adff]">
+          <div className="mb-2 grid size-11 place-items-center rounded-2xl bg-[var(--qb-purple-surface)] text-[var(--qb-purple-text)]">
             <BrainCircuit />
           </div>
           <SheetTitle className="text-xl font-extrabold">
@@ -3108,7 +3139,7 @@ function MobileNav({
     { id: 'progress' as Mode, label: 'Progress', icon: BarChart3 },
   ];
   return (
-    <nav className="fixed inset-x-3 bottom-3 z-30 grid grid-cols-4 rounded-2xl border border-border bg-[#11151c]/95 p-1.5 shadow-2xl backdrop-blur-xl lg:hidden">
+    <nav className="fixed inset-x-3 bottom-3 z-30 grid grid-cols-4 rounded-2xl border border-border bg-[var(--qb-mobile)]/95 p-1.5 shadow-2xl backdrop-blur-xl lg:hidden">
       {items.map(({ id, label, icon: Icon }) => (
         <button
           key={id}
@@ -3160,10 +3191,10 @@ function formatDuration(seconds: number) {
 }
 
 export default function QuizbuddyApp() {
-  const [sets, setSets] = useState<StudySet[]>(STARTER_SETS);
+  const [sets, setSets] = useState<StudySet[]>([]);
   const [settings, setSettings] = useState<AppSettings>(DEFAULT_SETTINGS);
   const [stats, setStats] = useState<StudyStats>(DEFAULT_STATS);
-  const [activeSetId, setActiveSetId] = useState(STARTER_SETS[0].id);
+  const [activeSetId, setActiveSetId] = useState('');
   const [mode, setMode] = useState<Mode>('home');
   const [query, setQuery] = useState('');
   const [coachOpen, setCoachOpen] = useState(false);
@@ -3175,12 +3206,12 @@ export default function QuizbuddyApp() {
       const stored = window.localStorage.getItem(STORAGE_KEY);
       if (stored) {
         const parsed = JSON.parse(stored) as Partial<StoredState>;
-        if (Array.isArray(parsed.sets) && parsed.sets.length)
-          setSets(parsed.sets);
+        if (Array.isArray(parsed.sets)) setSets(parsed.sets);
         if (parsed.settings)
           setSettings({ ...DEFAULT_SETTINGS, ...parsed.settings });
         if (parsed.stats) setStats({ ...DEFAULT_STATS, ...parsed.stats });
-        if (parsed.activeSetId) setActiveSetId(parsed.activeSetId);
+        if (typeof parsed.activeSetId === 'string')
+          setActiveSetId(parsed.activeSetId);
       }
     } catch {}
     const media = window.matchMedia('(prefers-color-scheme: light)');
@@ -3211,7 +3242,7 @@ export default function QuizbuddyApp() {
     document.documentElement.classList.toggle('light', light);
   }, [light]);
   const activeSet =
-    sets.find((set) => set.id === activeSetId) ?? sets[0] ?? STARTER_SETS[0];
+    sets.find((set) => set.id === activeSetId) ?? sets[0] ?? null;
   const openSet = (id: string) => {
     setActiveSetId(id);
     setMode('set');
@@ -3230,7 +3261,8 @@ export default function QuizbuddyApp() {
     setActiveSetId(next.id);
     setMode('set');
   };
-  const updateCard = (id: string, patch: Partial<Card>) =>
+  const updateCard = (id: string, patch: Partial<Card>) => {
+    if (!activeSet) return;
     setSets((items) =>
       items.map((set) =>
         set.id === activeSet.id
@@ -3244,7 +3276,9 @@ export default function QuizbuddyApp() {
           : set,
       ),
     );
+  };
   const recordReview = (id: string, result: Mastery) => {
+    if (!activeSet) return;
     const current = activeSet.cards.find((card) => card.id === id);
     const correct = result >= 2;
     updateCard(id, {
@@ -3290,29 +3324,25 @@ export default function QuizbuddyApp() {
       return;
     setSets((items) => items.filter((set) => set.id !== id));
     if (activeSetId === id)
-      setActiveSetId(
-        sets.find((set) => set.id !== id)?.id ?? STARTER_SETS[0].id,
-      );
+      setActiveSetId(sets.find((set) => set.id !== id)?.id ?? '');
   };
   const restore = (state: StoredState) => {
     setSets(state.sets);
     setSettings({ ...DEFAULT_SETTINGS, ...state.settings });
     setStats({ ...DEFAULT_STATS, ...state.stats });
-    setActiveSetId(
-      state.activeSetId || state.sets[0]?.id || STARTER_SETS[0].id,
-    );
+    setActiveSetId(state.activeSetId || state.sets[0]?.id || '');
   };
   const reset = () => {
     if (
       !window.confirm(
-        'Reset Quizbuddy to the starter library? Export a backup first if you want to keep your work.',
+        'Clear every local set and all progress? Export a backup first if you want to keep your work.',
       )
     )
       return;
-    setSets(STARTER_SETS);
-    setSettings(DEFAULT_SETTINGS);
-    setStats(DEFAULT_STATS);
-    setActiveSetId(STARTER_SETS[0].id);
+    setSets([]);
+    setSettings({ ...DEFAULT_SETTINGS });
+    setStats({ ...DEFAULT_STATS, activity: {} });
+    setActiveSetId('');
     setMode('home');
   };
 
@@ -3350,6 +3380,7 @@ export default function QuizbuddyApp() {
           onReset={reset}
         />
       );
+    if (!activeSet) return <StudioView onCreate={createSet} />;
     if (mode === 'edit')
       return (
         <EditorView
@@ -3448,11 +3479,13 @@ export default function QuizbuddyApp() {
   })();
 
   return (
-    <div className="quizbuddy-app min-h-screen bg-background font-sans text-foreground">
+    <div
+      className={`${light ? 'light ' : ''}quizbuddy-app min-h-screen bg-background font-sans text-foreground`}
+    >
       <Sidebar
         mode={mode}
         sets={sets}
-        activeSetId={activeSet.id}
+        activeSetId={activeSet?.id ?? ''}
         setMode={setMode}
         openSet={openSet}
       />
@@ -3470,13 +3503,17 @@ export default function QuizbuddyApp() {
         />
         <main>{view}</main>
       </div>
-      <Button
-        onClick={() => setCoachOpen(true)}
-        className="fixed bottom-20 right-4 z-20 h-12 rounded-full bg-[#8c7df7] px-5 font-extrabold text-white shadow-[0_18px_50px_rgba(0,0,0,.32)] lg:bottom-6 lg:right-6"
-      >
-        <MessageCircle /> Study coach
-      </Button>
-      <StudyCoach open={coachOpen} setOpen={setCoachOpen} set={activeSet} />
+      {activeSet && (
+        <>
+          <Button
+            onClick={() => setCoachOpen(true)}
+            className="fixed bottom-20 right-4 z-20 h-12 rounded-full bg-[#8c7df7] px-5 font-extrabold text-white shadow-[0_18px_50px_rgba(0,0,0,.32)] lg:bottom-6 lg:right-6"
+          >
+            <MessageCircle /> Study coach
+          </Button>
+          <StudyCoach open={coachOpen} setOpen={setCoachOpen} set={activeSet} />
+        </>
+      )}
       <MobileNav mode={mode} setMode={setMode} />
     </div>
   );

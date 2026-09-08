@@ -1,7 +1,7 @@
 import type { AppSettings, Card, Mastery, StudySet, StudyStats } from './types';
 
 export const DEFAULT_SETTINGS: AppSettings = {
-  theme: 'dark',
+  theme: 'light',
   dailyGoal: 30,
   newCardsPerSession: 20,
   grading: 'normal',
@@ -12,11 +12,11 @@ export const DEFAULT_SETTINGS: AppSettings = {
 };
 
 export const DEFAULT_STATS: StudyStats = {
-  reviews: 42,
-  correct: 34,
-  seconds: 3120,
-  streak: 4,
-  xp: 286,
+  reviews: 0,
+  correct: 0,
+  seconds: 0,
+  streak: 0,
+  xp: 0,
   activity: {},
 };
 
